@@ -24,6 +24,10 @@ Runs lint, typecheck, unit tests (`node --test`), the production build and the P
 
 `npm ci` points git at `.githooks/`, so `git push` runs `verify` first. Pushes go straight to `main`, and every push to `main` deploys to production. Never push with `--no-verify`.
 
+## Deploy
+
+The Vercel project `elitelephant` is connected to this repo. Every push to `main` builds a production deployment, and a Deployment Check holds it until the CI `verify` job passes; only then does it take `elitelephant.dev`. `www.elitelephant.dev` redirects (308) to the apex.
+
 ## Roll back
 
 If a bad build reaches production:
