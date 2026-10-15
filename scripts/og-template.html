@@ -50,41 +50,11 @@ function scatter(rnd, zone, count, rMin, rMax, area = { x: 0, y: 0, w: W, h: H }
   return out;
 }
 
-// A loose crowd around the card, like the back of the card: each at its own distance from the edge.
-function frame(rnd, card, count) {
-  const out = [];
-  const per = 2 * (card.w + card.h);
-  for (let i = 0; i < count * 6 && out.length < count; i++) {
-    const t = ((i * 0.618034) % 1) * per;
-    const r = 9 + 40 * rnd() ** 1.8;
-    const d = 18 + r + rnd() * 70;
-    let x, y;
-    if (t < card.w) { x = card.x + t; y = card.y - d; }
-    else if (t < card.w + card.h) { x = card.x + card.w + d; y = card.y + t - card.w; }
-    else if (t < 2 * card.w + card.h) { x = card.x + card.w - (t - card.w - card.h); y = card.y + card.h + d; }
-    else { x = card.x - d; y = card.y + card.h - (t - 2 * card.w - card.h); }
-    const b = { x: x + (rnd() - 0.5) * 30, y: y + (rnd() - 0.5) * 30, r };
-    if (visible(b) && clearOf(card, 14)(b) && apart(out, 8)(b)) out.push(b);
-  }
-  return out;
-}
-
 const LAYOUTS = {
-  'og-frame': () => {
-    const card = { x: 170, y: 120, w: 860, h: 390, pad: [52, 56], h1: 60, domain: 22 };
-    return { card, bubbles: frame(seeded(7), card, 34) };
-  },
-  'og-left': () => {
-    const card = { x: 64, y: 100, w: 700, h: 430, pad: [50, 54], h1: 54, domain: 22 };
-    const bubbles = [
-      { x: 1012, y: 318, r: 196 }, { x: 836, y: 82, r: 44 }, { x: 860, y: 566, r: 30 },
-      { x: 1168, y: 44, r: 58 }, { x: 806, y: 292, r: 16 }, { x: 1180, y: 612, r: 22 }, { x: 932, y: 34, r: 12 },
-    ];
-    return { card, bubbles };
-  },
-  'og-scatter': () => {
-    const card = { x: 200, y: 130, w: 800, h: 370, pad: [48, 54], h1: 58, domain: 21 };
-    return { card, bubbles: scatter(seeded(3), card, 30, 8, 58) };
+  // Share image, 1200×630: a big card (so the headline reads in chat previews) with bubbles scattered around it.
+  og: () => {
+    const card = { x: 110, y: 88, w: 980, h: 454, pad: [56, 64], h1: 68, domain: 24 };
+    return { card, bubbles: scatter(seeded(3), card, 30, 8, 52) };
   },
   // Static fallback behind the card on wide screens (drawn at 1920×1200): the card sits in the middle (780×456 at most).
   'fallback-wide': () => {

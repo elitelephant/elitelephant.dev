@@ -1,6 +1,5 @@
-// Renders the share image, the icons and the static fallback from scripts/og-template.html with Playwright.
-//   node scripts/og.ts                  writes everything into app/ and public/
-//   node scripts/og.ts --preview <dir>  writes every share-image layout into <dir> to compare them
+// Renders the share image, the icons and the static fallback from scripts/og-template.html with Playwright,
+// into app/ and public/. Run: node scripts/og.ts
 // The share image is final once published: Telegram, X and WhatsApp cache it.
 import { chromium, type Browser } from "@playwright/test";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
@@ -8,8 +7,6 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { site } from "../content/site.ts";
 
-const OG_LAYOUT = "og-scatter";
-const OG_LAYOUTS = ["og-frame", "og-left", "og-scatter"];
 const OG_MAX_BYTES = 300 * 1024;
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -77,30 +74,18 @@ async function write(file: string, data: Buffer | string) {
   console.log(`${file}  ${((await stat(full)).size / 1024).toFixed(1)} KB`);
 }
 
-const og = (layout: string): Shot => ({ layout, width: 1200, height: 630, dpr: 1, cell: 6 });
-
 const browser = await chromium.launch({ args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
 try {
-  const previewAt = process.argv.indexOf("--preview");
-  if (previewAt > -1) {
-    const dir = path.resolve(process.argv[previewAt + 1] ?? "og-preview");
-    for (const layout of OG_LAYOUTS) {
-      await mkdir(dir, { recursive: true });
-      await writeFile(path.join(dir, `${layout}.png`), await render(browser, og(layout)));
-      console.log(path.join(dir, `${layout}.png`));
-    }
-  } else {
-    const share = await render(browser, og(OG_LAYOUT));
-    if (share.length > OG_MAX_BYTES) throw new Error(`share image is ${share.length} bytes, over ${OG_MAX_BYTES}`);
-    await write("app/opengraph-image.png", share);
-    await write("app/twitter-image.png", share);
-    await write("app/opengraph-image.alt.txt", site.meta.ogAlt);
-    await write("app/twitter-image.alt.txt", site.meta.ogAlt);
-    await write("app/icon.png", await icon(browser, 32));
-    await write("app/apple-icon.png", await icon(browser, 180));
-    await write("public/fallback/rings-wide.webp", await render(browser, { layout: "fallback-wide", width: 1920, height: 1200, dpr: 1, cell: 6, webp: 0.8 }));
-    await write("public/fallback/rings-tall.webp", await render(browser, { layout: "fallback-tall", width: 390, height: 844, dpr: 3, cell: 6, webp: 0.8 }));
-  }
+  const share = await render(browser, { layout: "og", width: 1200, height: 630, dpr: 1, cell: 6 });
+  if (share.length > OG_MAX_BYTES) throw new Error(`share image is ${share.length} bytes, over ${OG_MAX_BYTES}`);
+  await write("app/opengraph-image.png", share);
+  await write("app/twitter-image.png", share);
+  await write("app/opengraph-image.alt.txt", site.meta.ogAlt);
+  await write("app/twitter-image.alt.txt", site.meta.ogAlt);
+  await write("app/icon.png", await icon(browser, 32));
+  await write("app/apple-icon.png", await icon(browser, 180));
+  await write("public/fallback/rings-wide.webp", await render(browser, { layout: "fallback-wide", width: 1920, height: 1200, dpr: 1, cell: 6, webp: 0.8 }));
+  await write("public/fallback/rings-tall.webp", await render(browser, { layout: "fallback-tall", width: 390, height: 844, dpr: 3, cell: 6, webp: 0.8 }));
 } finally {
   await browser.close();
 }
