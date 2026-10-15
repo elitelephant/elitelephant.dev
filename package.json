@@ -1,0 +1,40 @@
+{
+  "name": "elitelephant.dev",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test:unit": "node --test \"tests/unit/**/*.test.ts\"",
+    "test:e2e": "playwright test",
+    "verify": "npm run lint && npm run typecheck && npm run test:unit && npm run build && npm run test:e2e",
+    "prepare": "node scripts/install-hooks.mjs"
+  },
+  "dependencies": {
+    "@react-three/fiber": "9.8.2",
+    "@vercel/analytics": "2.0.1",
+    "geist": "1.7.2",
+    "next": "16.4.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@playwright/test": "1.64.1",
+    "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@types/three": "0.186.0",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.4.1",
+    "typescript": "5.9.3"
+  }
+}

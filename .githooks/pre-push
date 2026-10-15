@@ -1,0 +1,4 @@
+#!/bin/sh
+# Every push to main publishes to production, so the full check runs first.
+# Never skip it with --no-verify.
+exec npm run verify
