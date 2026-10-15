@@ -22,7 +22,7 @@ export async function cardAngle(page: Page) {
 
 // Waits until the card has stopped at `angle`. The spring overshoots, so passing through it is not enough:
 // clicking a moving card can press on one element and release on another.
-export async function expectAngle(page: Page, angle: number) {
+export async function expectAngle(page: Page, angle: number, timeout = 5_000) {
   let last = NaN;
   await expect
     .poll(async () => {
@@ -30,7 +30,7 @@ export async function expectAngle(page: Page, angle: number) {
       const still = now === last;
       last = now;
       return still ? now : NaN;
-    }, { intervals: [80] })
+    }, { intervals: [80], timeout })
     .toBeCloseTo(angle, 0);
 }
 
