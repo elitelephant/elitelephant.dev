@@ -40,4 +40,4 @@ This promotes the previous production deployment. Fix the problem on `main` afte
 
 ## URL flags
 
-`?quality=high|medium|low`, `?lock`, `?debug`, `?scene=1` (see `lib/params.ts`).
+`?quality=high|medium|low` forces a tier, `?lock` keeps it from stepping down, `?debug` shows the tier and frame rate, `?scene=0` leaves only the static rings (see `lib/params.ts`).

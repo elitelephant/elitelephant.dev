@@ -33,7 +33,7 @@ const markTier = (tier: Quality) => {
 };
 
 // The text paints first; the scene loads after the page has loaded, when the browser is idle.
-// For now it only mounts with ?scene=1 (this ticket turns it on for everyone once measured on real devices).
+// ?scene=0 leaves only the static rings.
 export function SceneLoader() {
   const [live, setLive] = useState<LiveTier | null>(null);
   const [options, setOptions] = useState({ lock: false, debug: false, tier: "low" as Quality });
