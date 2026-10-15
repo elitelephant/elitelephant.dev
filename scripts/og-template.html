@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>og</title>
+<!-- Rendered by scripts/og.ts. Same bubble light and ring pass as the site's scene: one ring per 6 px cell, mint field, dark ink. -->
+<style>
+  @font-face { font-family: Geist; src: url(/font/geist.woff2) format("woff2"); font-weight: 100 900; font-display: block; }
+  * { margin: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #8cfeb8; font-family: Geist, sans-serif; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  .card { position: absolute; display: flex; flex-direction: column; justify-content: space-between;
+    background: #0b100e; border: 1px solid rgba(140,254,184,.16); border-radius: 26px;
+    box-shadow: 0 34px 90px -30px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.02) inset; }
+  h1 { color: #f4fff8; font-weight: 600; line-height: 1.04; letter-spacing: -.025em; text-wrap: balance; }
+  h1 span { display: block; color: #8cfeb8; margin-top: .12em; }
+  .domain { color: rgba(244,255,248,.55); letter-spacing: .01em; }
+</style>
+<script type="importmap">{ "imports": { "three": "/three/three.module.js" } }</script>
+</head>
+<body>
+<canvas id="rings"></canvas>
+<script type="module">
+import * as THREE from 'three';
+
+const cfg = window.OG;
+const W = innerWidth, H = innerHeight, DPR = devicePixelRatio;
+const CAM_Z = 20, FOV = 35;
+const HALF_H = Math.tan(THREE.MathUtils.degToRad(FOV / 2)) * CAM_Z;
+const PAPER = '#8cfeb8', INK = '#062a17', INK_ALPHA = 0.92;
+
+function seeded(seed) {
+  let s = seed;
+  return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
+}
+
+// ---------- Layouts, in CSS px. Bubbles never sit over the card. ----------
+const clearOf = (box, gap) => b => b.x + b.r + gap < box.x || b.x - b.r - gap > box.x + box.w || b.y + b.r + gap < box.y || b.y - b.r - gap > box.y + box.h;
+const apart = (list, gap) => b => list.every(o => Math.hypot(o.x - b.x, o.y - b.y) > o.r + b.r + gap);
+const visible = b => b.x + b.r > 0 && b.x - b.r < W && b.y + b.r > 0 && b.y - b.r < H;
+
+// Bubbles scattered over the free area, small ones more often.
+function scatter(rnd, zone, count, rMin, rMax, area = { x: 0, y: 0, w: W, h: H }) {
+  const out = [];
+  for (let tries = 0; out.length < count && tries < count * 400; tries++) {
+    const r = rMin + (rMax - rMin) * rnd() ** 2.2;
+    const b = { x: area.x + rnd() * area.w, y: area.y + rnd() * area.h, r };
+    if (visible(b) && clearOf(zone, 14)(b) && apart(out, 8)(b)) out.push(b);
+  }
+  return out;
+}
+
+// A loose crowd around the card, like the back of the card: each at its own distance from the edge.
+function frame(rnd, card, count) {
+  const out = [];
+  const per = 2 * (card.w + card.h);
+  for (let i = 0; i < count * 6 && out.length < count; i++) {
+    const t = ((i * 0.618034) % 1) * per;
+    const r = 9 + 40 * rnd() ** 1.8;
+    const d = 18 + r + rnd() * 70;
+    let x, y;
+    if (t < card.w) { x = card.x + t; y = card.y - d; }
+    else if (t < card.w + card.h) { x = card.x + card.w + d; y = card.y + t - card.w; }
+    else if (t < 2 * card.w + card.h) { x = card.x + card.w - (t - card.w - card.h); y = card.y + card.h + d; }
+    else { x = card.x - d; y = card.y + card.h - (t - 2 * card.w - card.h); }
+    const b = { x: x + (rnd() - 0.5) * 30, y: y + (rnd() - 0.5) * 30, r };
+    if (visible(b) && clearOf(card, 14)(b) && apart(out, 8)(b)) out.push(b);
+  }
+  return out;
+}
+
+const LAYOUTS = {
+  'og-frame': () => {
+    const card = { x: 170, y: 120, w: 860, h: 390, pad: [52, 56], h1: 60, domain: 22 };
+    return { card, bubbles: frame(seeded(7), card, 34) };
+  },
+  'og-left': () => {
+    const card = { x: 64, y: 100, w: 700, h: 430, pad: [50, 54], h1: 54, domain: 22 };
+    const bubbles = [
+      { x: 1012, y: 318, r: 196 }, { x: 836, y: 82, r: 44 }, { x: 860, y: 566, r: 30 },
+      { x: 1168, y: 44, r: 58 }, { x: 806, y: 292, r: 16 }, { x: 1180, y: 612, r: 22 }, { x: 932, y: 34, r: 12 },
+    ];
+    return { card, bubbles };
+  },
+  'og-scatter': () => {
+    const card = { x: 200, y: 130, w: 800, h: 370, pad: [48, 54], h1: 58, domain: 21 };
+    return { card, bubbles: scatter(seeded(3), card, 30, 8, 58) };
+  },
+  // Static fallback behind the card on wide screens (drawn at 1920×1200): the card sits in the middle (780×456 at most).
+  'fallback-wide': () => {
+    const zone = { x: W / 2 - 430, y: H / 2 - 270, w: 860, h: 540 };
+    return { card: null, bubbles: scatter(seeded(11), zone, 52, 10, 70) };
+  },
+  // Static fallback on phones: the card covers the bottom 74%, the bubbles live in the strip above it.
+  'fallback-tall': () => {
+    const zone = { x: -50, y: H * 0.24, w: W + 100, h: H };
+    return { card: null, bubbles: scatter(seeded(5), zone, 12, 8, 46, { x: 0, y: 0, w: W, h: H * 0.24 }) };
+  },
+};
+
+// ---------- Rings ----------
+const lightVert = /* glsl */`
+  varying vec3 vN; varying vec3 vV;
+  void main() {
+    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    vN = normalize(normalMatrix * normal); vV = -mv.xyz;
+    gl_Position = projectionMatrix * mv;
+  }`;
+const lightFrag = /* glsl */`
+  varying vec3 vN; varying vec3 vV;
+  void main() {
+    vec3 n = normalize(vN), v = normalize(vV), l = normalize(vec3(-0.5, 0.75, 0.6));
+    float spec = pow(max(dot(n, normalize(l + v)), 0.0), 40.0);
+    float fres = pow(1.0 - max(dot(n, v), 0.0), 2.2);
+    float light = (0.02 + 0.8 * fres + 0.9 * spec + 0.06 * max(dot(n, l), 0.0)) * mix(0.5, 1.0, smoothstep(25.5, 18.0, length(vV)));
+    gl_FragColor = vec4(clamp(light, 0.0, 1.0), 0.0, 0.0, 1.0);
+  }`;
+const ringFrag = /* glsl */`
+  uniform sampler2D tLight;
+  uniform vec2 uRes, uCell;
+  uniform vec3 uBg, uInk;
+  uniform float uInkA;
+  void main() {
+    vec2 frag = gl_FragCoord.xy;
+    vec2 cell = floor(frag / uCell), local = fract(frag / uCell);
+    float b = texture2D(tLight, (cell + 0.5) * uCell / uRes).r;
+    float side = min(uCell.x, uCell.y);
+    float d = length((local - 0.5) * uCell / side);
+    float aa = 1.2 / side;
+    float rad = 0.1 + 0.34 * b;
+    float t = max(0.055, 1.1 / side);
+    float ink = 1.0 - smoothstep(t - aa, t + aa, abs(d - rad));
+    if (b > 0.82) ink = max(ink, 1.0 - smoothstep(rad - aa, rad + aa, d));
+    ink *= step(0.04, b) * uInkA;
+    gl_FragColor = vec4(mix(uBg, uInk, ink), 1.0);
+  }`;
+
+const vec3 = hex => new THREE.Vector3(...[1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255));
+
+function render(bubbles) {
+  const canvas = document.getElementById('rings');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, preserveDrawingBuffer: true });
+  renderer.setPixelRatio(DPR);
+  renderer.setSize(W, H, false);
+  const camera = new THREE.PerspectiveCamera(FOV, W / H, 0.1, 100);
+  camera.position.z = CAM_Z;
+
+  const scene = new THREE.Scene();
+  const unit = (2 * HALF_H) / H;
+  const light = new THREE.ShaderMaterial({
+    vertexShader: lightVert, fragmentShader: lightFrag, transparent: true, depthWrite: false, depthTest: false,
+    blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.OneFactor, blendDst: THREE.OneFactor,
+  });
+  const geo = new THREE.SphereGeometry(1, 48, 32);
+  for (const b of bubbles) {
+    const m = new THREE.Mesh(geo, light);
+    m.position.set((b.x - W / 2) * unit, -(b.y - H / 2) * unit, 0);
+    m.scale.setScalar(b.r * unit);
+    scene.add(m);
+  }
+
+  const res = renderer.getDrawingBufferSize(new THREE.Vector2());
+  const cell = Math.round(cfg.cell * DPR);
+  const target = new THREE.WebGLRenderTarget(Math.ceil(res.x / cell) * 2, Math.ceil(res.y / cell) * 2,
+    { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
+  renderer.setRenderTarget(target);
+  renderer.setClearColor(0x000000, 0);
+  renderer.render(scene, camera);
+  renderer.setRenderTarget(null);
+
+  const pass = new THREE.Scene();
+  const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({
+    uniforms: {
+      tLight: { value: target.texture }, uRes: { value: res }, uCell: { value: new THREE.Vector2(cell, cell) },
+      uBg: { value: vec3(PAPER) }, uInk: { value: vec3(INK) }, uInkA: { value: INK_ALPHA },
+    },
+    vertexShader: 'void main() { gl_Position = vec4(position.xy, 0.0, 1.0); }', fragmentShader: ringFrag,
+  }));
+  quad.frustumCulled = false;
+  pass.add(quad);
+  renderer.render(pass, new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1));
+  return canvas;
+}
+
+function drawCard(card, texts) {
+  const el = document.createElement('div');
+  el.className = 'card';
+  Object.assign(el.style, { left: `${card.x}px`, top: `${card.y}px`, width: `${card.w}px`, height: `${card.h}px`, padding: `${card.pad[0]}px ${card.pad[1]}px` });
+  const h1 = document.createElement('h1');
+  h1.style.fontSize = `${card.h1}px`;
+  const now = document.createElement('span');
+  now.textContent = texts.building;
+  h1.append(texts.watching, ' ', now);
+  const domain = document.createElement('p');
+  domain.className = 'domain';
+  domain.style.fontSize = `${card.domain}px`;
+  domain.textContent = texts.domain;
+  el.append(h1, domain);
+  document.body.append(el);
+}
+
+const { card, bubbles } = LAYOUTS[cfg.layout]();
+const canvas = render(bubbles);
+if (card) {
+  drawCard(card, cfg.texts);
+  await document.fonts.load(`600 ${card.h1}px Geist`);
+  await document.fonts.ready;
+}
+if (cfg.webp) window.__webp = canvas.toDataURL('image/webp', cfg.webp);
+window.__done = true;
+</script>
+</body>
+</html>
