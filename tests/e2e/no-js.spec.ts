@@ -21,9 +21,9 @@ test("without JavaScript the headline and every link work", async ({ page }) => 
     await expect(link).toHaveAttribute("rel", "noopener noreferrer");
   }
 
-  const email = contact.getByRole("link", { name: "Email hello@elitelephant.dev", exact: true });
-  await expect(email).toHaveAttribute("href", "mailto:hello@elitelephant.dev");
-  await expect(email).not.toHaveAttribute("target", /.*/);
+  // hello@elitelephant.dev stays off the site until it receives mail.
+  await expect(contact.getByRole("link")).toHaveCount(3);
+  await expect(page.locator('a[href^="mailto:"]')).toHaveCount(0);
 });
 
 test("metadata is in the HTML", async ({ page }) => {

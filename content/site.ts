@@ -68,7 +68,8 @@ export const site = {
       { kind: "external", label: "Telegram", href: "https://t.me/elitelephant" },
       { kind: "external", label: "X", href: "https://x.com/elitelephant" },
       { kind: "external", label: "GitHub", href: "https://github.com/elitelephant" },
-      { kind: "email", label: "hello@elitelephant.dev", href: "mailto:hello@elitelephant.dev" },
+      // Out until hello@elitelephant.dev receives mail; it goes back as:
+      // { kind: "email", label: "hello@elitelephant.dev", href: "mailto:hello@elitelephant.dev" },
     ],
   },
   back: {
