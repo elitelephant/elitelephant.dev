@@ -53,7 +53,7 @@ async function render(browser: Browser, shot: Shot) {
   return png;
 }
 
-// The PNG icons are the hand-written app/icon.svg, rasterized on a full mint square (iOS rounds the corners itself).
+// The PNG icons are app/icon.svg (plain mint) rasterized; iOS rounds the corners itself.
 async function icon(browser: Browser, size: number) {
   const page = await open(browser, size, size, 1);
   await page.route(`${HOST}/icon.html`, (route) => route.fulfill({
