@@ -32,6 +32,12 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={GeistSans.variable}>
+      <head>
+        {/* Without JavaScript only the front shows (D-0230), so the flip button would do nothing. */}
+        <noscript>
+          <style>{".front .flip{display:none}"}</style>
+        </noscript>
+      </head>
       <body>{children}</body>
     </html>
   );

@@ -7,7 +7,7 @@
 }
 * { box-sizing: border-box; margin: 0; }
 html, body { height: 100%; }
-body { background: var(--bg); color: var(--text); font-family: var(--font); overflow: hidden;
+body { background: var(--bg) url(/fallback/rings-wide.webp) center / cover no-repeat; color: var(--text); font-family: var(--font); overflow: hidden;
   -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
 a { color: var(--mint); text-decoration: none; text-underline-offset: 3px; }
 a:hover { text-decoration: underline; }
@@ -39,15 +39,15 @@ h1 .now { display: block; color: var(--mint); margin-top: .12em; }
 .panels::-webkit-scrollbar { display: none; }
 .panel { min-height: 100%; scroll-snap-align: start; scroll-snap-stop: always; padding: var(--pad-y) calc(var(--pad-x) + 40px) 76px var(--pad-x);
   display: flex; flex-direction: column; justify-content: safe center; }
-.panel > * { opacity: 0; transform: translateY(10px); transition: opacity .5s, transform .5s; }
-.panel.in > * { opacity: 1; transform: none; }
+.card[data-ready] .panel > * { opacity: 0; transform: translateY(10px); transition: opacity .5s, transform .5s; }
+.card[data-ready] .panel.in > * { opacity: 1; transform: none; }
 .panel.in > *:nth-child(2) { transition-delay: .06s; }
 .panel.in > *:nth-child(3) { transition-delay: .12s; }
 .panel.in > *:nth-child(4) { transition-delay: .18s; }
 .panel.in > *:nth-child(5) { transition-delay: .24s; }
 .label { font-size: 12px; font-weight: 500; color: var(--mint); letter-spacing: .12em; margin-bottom: 18px; text-transform: uppercase; }
 .label span { color: var(--faint); margin-right: 10px; }
-h2 { font-size: 24px; font-weight: 500; letter-spacing: -.01em; margin-bottom: 12px; }
+.panel h3 { font-size: 24px; font-weight: 500; letter-spacing: -.01em; margin-bottom: 12px; }
 p { color: var(--muted); line-height: 1.62; font-size: 16px; margin-bottom: 12px; max-width: 60ch; }
 .say { font-size: 28px; font-weight: 600; color: var(--text); margin: 24px 0 14px; letter-spacing: -.015em; }
 .story p { font-size: 15px; line-height: 1.55; margin-bottom: 10px; }
@@ -57,6 +57,11 @@ p { color: var(--muted); line-height: 1.62; font-size: 16px; margin-bottom: 12px
 .dots button::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--faint); transition: background .2s, transform .2s; }
 .dots button[aria-current="true"]::before { background: var(--mint); transform: scale(1.4); }
 .back .flip { position: absolute; right: 22px; bottom: 22px; background: var(--card); }
+.panels:focus-visible { outline-offset: -4px; border-radius: var(--radius); }
+
+.notfound { position: relative; inset: auto; place-self: center; width: min(460px, 100%); padding: var(--pad-y) var(--pad-x);
+  display: grid; gap: 14px; pointer-events: auto; }
+.notfound h1 { font-size: 40px; }
 
 @media (max-width: 760px) {
   :root { --pad-x: 24px; --pad-y: 28px; --radius: 20px; }
@@ -68,7 +73,10 @@ p { color: var(--muted); line-height: 1.62; font-size: 16px; margin-bottom: 12px
   .panel { padding: var(--pad-y) calc(var(--pad-x) + 22px) 76px var(--pad-x); }
   .story p { font-size: 15px; line-height: 1.55; }
   .dots { right: 8px; }
-  h2 { font-size: 21px; }
+  .panel h3 { font-size: 21px; }
+}
+@media (max-width: 760px) and (orientation: portrait) {
+  body { background: var(--bg) url(/fallback/rings-tall.webp) top center / 100% auto no-repeat; }
 }
 /* Short landscape phones: let the card use the full height. */
 @media (max-height: 520px) and (min-width: 560px) {
@@ -83,5 +91,5 @@ p { color: var(--muted); line-height: 1.62; font-size: 16px; margin-bottom: 12px
   .panel { scroll-snap-stop: normal; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .panel > * { transition: none; opacity: 1; transform: none; }
+  .card[data-ready] .panel > * { transition: none; opacity: 1; transform: none; }
 }

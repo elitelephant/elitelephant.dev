@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
 // From the smallest phone to 1440p, including short landscape phones.
 const SIZES = [
@@ -6,32 +6,48 @@ const SIZES = [
   [768, 1024], [1024, 768], [1280, 800], [1920, 1080], [2560, 1440],
 ] as const;
 
+test.use({ reducedMotion: "reduce" });
+
+type Box = { top: number; left: number; right: number; bottom: number };
+const boxes = (page: Page, selector: string) =>
+  page.locator(selector).evaluateAll((els) => els.map((el) => {
+    const r = el.getBoundingClientRect();
+    return { top: r.top, left: r.left, right: r.right, bottom: r.bottom };
+  }));
+const inside = (inner: Box, outer: Box, what: string) => {
+  expect(inner.top, `${what} top`).toBeGreaterThanOrEqual(outer.top - 0.5);
+  expect(inner.left, `${what} left`).toBeGreaterThanOrEqual(outer.left - 0.5);
+  expect(inner.right, `${what} right`).toBeLessThanOrEqual(outer.right + 0.5);
+  expect(inner.bottom, `${what} bottom`).toBeLessThanOrEqual(outer.bottom + 0.5);
+};
+
 for (const [width, height] of SIZES) {
-  test(`front fits at ${width}x${height}`, async ({ page }) => {
+  test(`both faces fit at ${width}x${height}`, async ({ page }) => {
     await page.setViewportSize({ width, height });
     await page.goto("/?quality=low");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
 
-    const box = await page.evaluate(() => {
-      const rect = (sel: string) => document.querySelector(sel)!.getBoundingClientRect();
-      const card = rect(".card");
-      const parts = [".hi", "h1", ".row", ...[...document.querySelectorAll(".links a")].map((_, i) => `.links li:nth-child(${i + 1}) a`)];
-      return {
-        overflowX: document.documentElement.scrollWidth > innerWidth,
-        card: { top: card.top, left: card.left, right: card.right, bottom: card.bottom },
-        parts: parts.map((sel) => ({ sel, ...rect(sel).toJSON() })),
-      };
-    });
+    const [card] = await boxes(page, "#card");
+    inside(card, { top: 0, left: 0, right: width, bottom: height }, "card");
+    for (const selector of ["#front .hi", "#front h1", "#front .links a", '[data-flip="front"]']) {
+      for (const b of await boxes(page, selector)) inside(b, card, selector);
+    }
 
-    expect(box.overflowX).toBe(false);
-    expect(box.card.top).toBeGreaterThanOrEqual(0);
-    expect(box.card.left).toBeGreaterThanOrEqual(0);
-    expect(box.card.right).toBeLessThanOrEqual(width);
-    expect(box.card.bottom).toBeLessThanOrEqual(height);
-    for (const part of box.parts) {
-      expect(part.top, `${part.sel} top`).toBeGreaterThanOrEqual(box.card.top);
-      expect(part.left, `${part.sel} left`).toBeGreaterThanOrEqual(box.card.left);
-      expect(part.right, `${part.sel} right`).toBeLessThanOrEqual(box.card.right);
-      expect(part.bottom, `${part.sel} bottom`).toBeLessThanOrEqual(box.card.bottom);
+    await page.getByRole("button", { name: "Who's behind this?" }).click();
+    const [dots] = await boxes(page, "#back .dots");
+    const [backButton] = await boxes(page, '[data-flip="back"]');
+    inside(dots, card, "dots");
+    inside(backButton, card, "back button");
+
+    // Every panel, scrolled into place: its text stays inside the card and clear of the dots.
+    for (const name of ["Building", "Story", "Offline"]) {
+      await page.getByRole("list", { name: "Sections" }).getByRole("button", { name }).click();
+      const id = name.toLowerCase();
+      await expect(page.getByRole("heading", { level: 2, name })).toBeInViewport();
+      for (const b of await boxes(page, `#${id} > *`)) {
+        expect(b.left, `${id} left`).toBeGreaterThanOrEqual(card.left);
+        expect(b.right, `${id} clear of the dots`).toBeLessThanOrEqual(dots.left);
+      }
     }
   });
 }
