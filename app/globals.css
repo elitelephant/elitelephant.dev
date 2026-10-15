@@ -1,0 +1,87 @@
+/* From the approved mockup (exploracion/alta/index.html), same class names. Page in mint, card dark (D-0231). */
+:root {
+  --bg: #8cfeb8; --card: #0b100e; --mint: #8cfeb8; --text: #f4fff8; --muted: rgba(244,255,248,.64);
+  --faint: rgba(244,255,248,.55); --line: rgba(140,254,184,.16); --radius: 22px;
+  --pad-x: 44px; --pad-y: 40px;
+  --font: var(--font-geist-sans), system-ui, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); overflow: hidden;
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+a { color: var(--mint); text-decoration: none; text-underline-offset: 3px; }
+a:hover { text-decoration: underline; }
+:focus-visible { outline: 2px solid var(--mint); outline-offset: 3px; border-radius: 6px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.stage { position: fixed; inset: 0; display: grid; place-items: center; perspective: 1800px; padding: 16px; pointer-events: none; }
+.card { position: relative; width: min(780px, 100%); height: 456px; transform-style: preserve-3d; pointer-events: auto; will-change: transform; }
+.face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  border-radius: var(--radius); background: var(--card); border: 1px solid var(--line);
+  box-shadow: 0 30px 80px -30px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.02) inset; }
+
+.front { transform: rotateY(0deg); padding: var(--pad-y) var(--pad-x); display: grid; grid-template-rows: auto 1fr auto; }
+.hi { color: var(--muted); font-size: 16px; letter-spacing: .005em; }
+h1 { align-self: center; font-size: 48px; font-weight: 600; line-height: 1.04; letter-spacing: -.025em; text-wrap: balance; }
+h1 .now { display: block; color: var(--mint); margin-top: .12em; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.links { display: flex; flex-wrap: wrap; gap: 8px 22px; list-style: none; padding: 0; font-size: 15px; }
+.links .ext { color: var(--faint); }
+
+.flip { display: inline-flex; align-items: center; gap: 8px; background: transparent; color: var(--mint);
+  border: 1px solid rgba(140,254,184,.42); border-radius: 999px; padding: 10px 18px; font: 500 14px var(--font); cursor: pointer;
+  transition: background .2s, border-color .2s; }
+.flip:hover { background: rgba(140,254,184,.08); border-color: rgba(140,254,184,.7); }
+.flip svg { width: 15px; height: 15px; }
+
+.back { transform: rotateY(180deg); overflow: hidden; }
+.panels { position: absolute; inset: 0; overflow-y: auto; scroll-snap-type: y mandatory; overscroll-behavior: contain; scrollbar-width: none; }
+.panels::-webkit-scrollbar { display: none; }
+.panel { min-height: 100%; scroll-snap-align: start; scroll-snap-stop: always; padding: var(--pad-y) calc(var(--pad-x) + 40px) 76px var(--pad-x);
+  display: flex; flex-direction: column; justify-content: safe center; }
+.panel > * { opacity: 0; transform: translateY(10px); transition: opacity .5s, transform .5s; }
+.panel.in > * { opacity: 1; transform: none; }
+.panel.in > *:nth-child(2) { transition-delay: .06s; }
+.panel.in > *:nth-child(3) { transition-delay: .12s; }
+.panel.in > *:nth-child(4) { transition-delay: .18s; }
+.panel.in > *:nth-child(5) { transition-delay: .24s; }
+.label { font-size: 12px; font-weight: 500; color: var(--mint); letter-spacing: .12em; margin-bottom: 18px; text-transform: uppercase; }
+.label span { color: var(--faint); margin-right: 10px; }
+h2 { font-size: 24px; font-weight: 500; letter-spacing: -.01em; margin-bottom: 12px; }
+p { color: var(--muted); line-height: 1.62; font-size: 16px; margin-bottom: 12px; max-width: 60ch; }
+.say { font-size: 28px; font-weight: 600; color: var(--text); margin: 24px 0 14px; letter-spacing: -.015em; }
+.story p { font-size: 15px; line-height: 1.55; margin-bottom: 10px; }
+
+.dots { position: absolute; right: 22px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; list-style: none; padding: 0; }
+.dots button { width: 26px; height: 26px; border-radius: 50%; border: 0; background: transparent; cursor: pointer; display: grid; place-items: center; }
+.dots button::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--faint); transition: background .2s, transform .2s; }
+.dots button[aria-current="true"]::before { background: var(--mint); transform: scale(1.4); }
+.back .flip { position: absolute; right: 22px; bottom: 22px; background: var(--card); }
+
+@media (max-width: 760px) {
+  :root { --pad-x: 24px; --pad-y: 28px; --radius: 20px; }
+  .stage { place-items: end center; padding: 16px 16px max(16px, env(safe-area-inset-bottom)); }
+  .card { height: min(74vh, 640px); height: min(74dvh, 640px); }
+  h1 { font-size: clamp(30px, 9vw, 38px); }
+  .front .row { flex-direction: column; align-items: flex-start; gap: 20px; }
+  .back { background: rgba(11,16,14,.82); }
+  .panel { padding: var(--pad-y) calc(var(--pad-x) + 22px) 76px var(--pad-x); }
+  .story p { font-size: 15px; line-height: 1.55; }
+  .dots { right: 8px; }
+  h2 { font-size: 21px; }
+}
+/* Short landscape phones: let the card use the full height. */
+@media (max-height: 520px) and (min-width: 560px) {
+  .stage { place-items: center; }
+  .card { height: calc(100vh - 32px); height: calc(100dvh - 32px); width: min(640px, 68vw); }
+  h1 { font-size: 32px; }
+  :root { --pad-y: 22px; }
+}
+/* On short screens a panel can be taller than the card: snap softly so it can be read to the end. */
+@media (max-height: 620px) {
+  .panels { scroll-snap-type: y proximity; }
+  .panel { scroll-snap-stop: normal; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .panel > * { transition: none; opacity: 1; transform: none; }
+}
