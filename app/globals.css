@@ -14,9 +14,14 @@ a:hover { text-decoration: underline; }
 :focus-visible { outline: 2px solid var(--mint); outline-offset: 3px; border-radius: 6px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-/* The 3D scene (?scene=1 for now) sits behind the card; bubbles are grabbed on the canvas itself. */
+/* The 3D scene sits behind the card; bubbles are grabbed on the canvas itself. It fades in over the static
+   rings once its first frame is drawn, and fades out if the device turns out too slow for it. */
+.scene { opacity: 0; transition: opacity .7s ease; }
+html[data-scene="ready"] .scene { opacity: 1; }
 .scene canvas { touch-action: none; cursor: grab; }
 .scene canvas.grabbing { cursor: grabbing; }
+.debug { position: fixed; left: 12px; bottom: 12px; z-index: 10; margin: 0; max-width: none; font: 12px ui-monospace, monospace;
+  color: var(--mint); background: rgba(0,0,0,.7); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
 
 .stage { position: fixed; inset: 0; display: grid; place-items: center; perspective: 1800px; padding: 16px; pointer-events: none; }
 .card { position: relative; width: min(780px, 100%); height: 456px; transform-style: preserve-3d; pointer-events: auto; will-change: transform; }
@@ -96,4 +101,5 @@ p { color: var(--muted); line-height: 1.62; font-size: 16px; margin-bottom: 12px
 }
 @media (prefers-reduced-motion: reduce) {
   .card[data-ready] .panel > * { transition: none; opacity: 1; transform: none; }
+  .scene { transition: none; }
 }

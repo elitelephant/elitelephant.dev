@@ -175,6 +175,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
   const scratch = new THREE.Vector3();
   function frame(dt: number, t: number) {
     time = t;
+    if (!compiled) return;
     if (reduce) {
       if (!still) {
         updateTargets(0);
@@ -207,10 +208,24 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
   root.dataset.sceneMode = mode;
   root.dataset.bubbles = String(count);
 
+  // Nothing is drawn until the shaders are compiled; the first frame then sets data-scene="ready",
+  // which fades the canvas in over the static rings (app/globals.css).
+  let compiled = false;
+  let disposed = false;
+  rings
+    .compile(scene, camera)
+    .catch(() => {})
+    .finally(() => {
+      if (disposed) return;
+      compiled = true;
+      invalidate();
+    });
+
   return {
     frame,
     resize,
     dispose() {
+      disposed = true;
       clearTimeout(rebuildTimer);
       unsubscribe();
       unkick();

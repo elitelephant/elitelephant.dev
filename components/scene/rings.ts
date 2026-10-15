@@ -39,6 +39,14 @@ export function createRings(gl: THREE.WebGLRenderer) {
   }
 
   return {
+    // Compiles both programs before the first frame, so the scene doesn't stutter when it appears. The light
+    // program is compiled with the target bound, since that is where it draws.
+    compile(scene: THREE.Scene, camera: THREE.Camera) {
+      gl.setRenderTarget(target);
+      const light = gl.compileAsync(scene, camera);
+      gl.setRenderTarget(null);
+      return Promise.all([light, gl.compileAsync(pass, passCamera)]);
+    },
     render(scene: THREE.Scene, camera: THREE.Camera) {
       fit();
       gl.setRenderTarget(target);

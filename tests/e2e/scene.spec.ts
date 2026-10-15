@@ -28,7 +28,7 @@ for (const [quality, bubbles] of [["medium", "44"], ["high", "64"]] as const) {
     page.on("console", (m) => {
       if (m.type() === "error") errors.push(m.text());
     });
-    await sceneReady(page, `/?scene=1&quality=${quality}`);
+    await sceneReady(page, `/?scene=1&quality=${quality}&lock`);
     await expect(html(page)).toHaveAttribute("data-bubbles", bubbles);
     await expect(page.locator(".scene canvas")).toBeVisible();
 
@@ -39,6 +39,21 @@ for (const [quality, bubbles] of [["medium", "44"], ["high", "64"]] as const) {
     expect(errors).toEqual([]);
   });
 }
+
+test("the scene fades in over the static rings", async ({ page }) => {
+  await page.goto("/?scene=1&quality=medium&lock");
+  const opacity = () => page.locator(".scene").evaluate((el) => Number(getComputedStyle(el).opacity));
+  await expect(page.locator(".scene")).toHaveCount(1, { timeout: 20_000 });
+  await expect(html(page)).toHaveAttribute("data-scene", "ready", { timeout: 20_000 });
+  await expect.poll(opacity, { timeout: 5_000 }).toBe(1);
+});
+
+test("?debug shows the tier, the bubbles and the frame rate", async ({ page }) => {
+  await sceneReady(page, "/?scene=1&quality=medium&lock&debug");
+  await expect(html(page)).toHaveAttribute("data-tier", "medium");
+  await expect(page.locator(".debug")).toContainText("medium · 44 bubbles", { timeout: 15_000 });
+  await expect(page.locator(".debug")).toContainText(/\d+ fps/);
+});
 
 test("without ?scene=1 there is no 3D, only the static rings", async ({ page }) => {
   await page.goto("/?quality=high");
@@ -55,7 +70,7 @@ test("low quality keeps the static rings", async ({ page }) => {
 });
 
 test("the frame breathes", async ({ page }) => {
-  await sceneReady(page, "/?scene=1&quality=medium");
+  await sceneReady(page, "/?scene=1&quality=medium&lock");
   await turnOver(page);
   await page.waitForTimeout(3000);
   const a = await page.screenshot();
@@ -68,7 +83,7 @@ test.describe("with reduced motion", () => {
   test.use({ reducedMotion: "reduce" });
 
   test("the frame holds still, without breathing", async ({ page }) => {
-    await sceneReady(page, "/?scene=1&quality=medium");
+    await sceneReady(page, "/?scene=1&quality=medium&lock");
     await turnOver(page);
     await page.waitForTimeout(500);
     const a = await page.screenshot();
