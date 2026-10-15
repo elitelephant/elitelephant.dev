@@ -32,6 +32,7 @@ function createFlip(card: HTMLElement) {
     const still = atRest(spring, target) && Math.abs(aim.x - tilt.x) < 0.02 && Math.abs(aim.y - tilt.y) < 0.02;
     if (still) {
       spring = { angle: target, vel: 0 };
+      tilt = { ...aim };
       render();
       raf = 0;
       return;

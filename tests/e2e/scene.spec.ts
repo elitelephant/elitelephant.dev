@@ -33,7 +33,8 @@ for (const [quality, bubbles] of [["medium", "44"], ["high", "64"]] as const) {
     await expect(page.locator(".scene canvas")).toBeVisible();
 
     await turnOver(page);
-    await page.getByRole("button", { name: "Back to the front" }).click();
+    // Escape, not the Back button: at a few frames per second a click can land on a card that is still turning.
+    await page.keyboard.press("Escape");
     await expect(html(page)).toHaveAttribute("data-scene-mode", "scatter");
     expect(errors).toEqual([]);
   });

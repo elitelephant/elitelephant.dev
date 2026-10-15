@@ -21,7 +21,8 @@ export async function cardAngle(page: Page) {
 }
 
 // Waits until the card has stopped at `angle`. The spring overshoots, so passing through it is not enough:
-// clicking a moving card can press on one element and release on another.
+// clicking a moving card can press on one element and release on another. At rest the spring snaps to the exact
+// angle, which also tells "stopped" apart from two reads within one slow frame.
 export async function expectAngle(page: Page, angle: number, timeout = 5_000) {
   let last = NaN;
   await expect
@@ -31,7 +32,7 @@ export async function expectAngle(page: Page, angle: number, timeout = 5_000) {
       last = now;
       return still ? now : NaN;
     }, { intervals: [80], timeout })
-    .toBeCloseTo(angle, 0);
+    .toBe(angle);
 }
 
 // Index of the panel at the top of the panels box, once scrolling has stopped.
