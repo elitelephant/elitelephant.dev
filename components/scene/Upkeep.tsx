@@ -2,9 +2,9 @@
 
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
-import { createQualityMonitor, type LiveTier } from "@/lib/quality-monitor";
+import { createQualityMonitor, type Drop, type LiveTier } from "@/lib/quality-monitor";
 
-type Props = { tier: LiveTier; reduce: boolean; lock: boolean; onDrop: (next: LiveTier | "low") => void };
+type Props = { tier: LiveTier; reduce: boolean; lock: boolean; onDrop: (drop: Drop) => void };
 
 export const FPS_EVENT = "scene-fps";
 
@@ -34,10 +34,10 @@ export function Upkeep({ tier, reduce, lock, onDrop }: Props) {
 
   useFrame(() => {
     if (reduce) return;
-    const next = monitor.frame(performance.now(), document.hasFocus());
-    if (next && !lock && !dropped.current) {
+    const drop = monitor.frame(performance.now(), document.hasFocus());
+    if (drop && !lock && !dropped.current) {
       dropped.current = true;
-      onDrop(next);
+      onDrop(drop);
     }
   });
 

@@ -2,12 +2,12 @@
 
 import { Canvas } from "@react-three/fiber";
 import { useState } from "react";
-import type { LiveTier } from "@/lib/quality-monitor";
+import type { Drop, LiveTier } from "@/lib/quality-monitor";
 import { CAM_Z, FOV } from "./layout";
 import { Upkeep } from "./Upkeep";
 import { World } from "./World";
 
-type Props = { tier: LiveTier; lock: boolean; onDrop: (next: LiveTier | "low") => void };
+type Props = { tier: LiveTier; lock: boolean; onDrop: (drop: Drop) => void };
 
 const COUNT: Record<LiveTier, number> = { high: 64, medium: 44 };
 const MAX_DPR: Record<LiveTier, number> = { high: 2, medium: 1.5 };

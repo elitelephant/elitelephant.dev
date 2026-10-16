@@ -1,11 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Component, useCallback, useEffect, useState, type ReactNode } from "react";
+import { Component, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { flipStore } from "@/lib/flip-store";
 import { readParams, type Quality } from "@/lib/params";
 import { pickQuality, probeDevice } from "@/lib/quality";
-import type { LiveTier } from "@/lib/quality-monitor";
+import { createRecoveryWatch, type Drop, type LiveTier } from "@/lib/quality-monitor";
 import { DebugPanel } from "./DebugPanel";
 
 // The 3D chunk is only downloaded when a device gets the scene.
@@ -37,6 +37,9 @@ const markTier = (tier: Quality) => {
 export function SceneLoader() {
   const [live, setLive] = useState<LiveTier | null>(null);
   const [options, setOptions] = useState({ lock: false, debug: false, tier: "low" as Quality });
+  // The tier waiting to come back after a drop for held frames, and whether that one comeback was already given.
+  const [comeback, setComeback] = useState<LiveTier | null>(null);
+  const cameBack = useRef(false);
 
   useEffect(() => {
     const params = readParams(location.search);
@@ -66,13 +69,43 @@ export function SceneLoader() {
   }, []);
 
   // Too slow for its tier: high steps down to medium; medium fades out and leaves the static rings.
-  const onDrop = useCallback((next: LiveTier | "low") => {
-    markTier(next);
-    setOptions((o) => ({ ...o, tier: next }));
-    if (next !== "low") return setLive(next);
+  // If it went because the browser held frames back, the scene comes back once when the browser runs normally again;
+  // a second drop keeps the static rings.
+  const onDrop = useCallback(({ from, to, held }: Drop) => {
+    markTier(to);
+    setOptions((o) => ({ ...o, tier: to }));
+    if (to !== "low") return setLive(to);
     document.documentElement.dataset.scene = "off";
     setTimeout(() => setLive(null), FADE_OUT_MS);
+    if (held && !cameBack.current) {
+      cameBack.current = true;
+      setComeback(from);
+    }
   }, []);
+
+  // While the static rings show, watch the page's own frame rate; once it is normal, bring the scene back.
+  useEffect(() => {
+    if (!comeback) return;
+    const watch = createRecoveryWatch();
+    let raf = 0;
+    const tick = () => {
+      if (!watch.frame(performance.now(), document.hasFocus())) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+      markTier(comeback);
+      setOptions((o) => ({ ...o, tier: comeback }));
+      setLive(comeback);
+      setComeback(null);
+    };
+    raf = requestAnimationFrame(tick);
+    const onVisibility = () => watch.reset();
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      cancelAnimationFrame(raf);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [comeback]);
 
   return (
     <>

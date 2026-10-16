@@ -201,7 +201,11 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
       }
     }
     rings.render(scene, camera);
-    if (root.dataset.scene !== "ready") root.dataset.scene = "ready";
+    // Only the first frame: when the scene steps down, SceneLoader sets "off" so the canvas fades out.
+    if (!shown) {
+      shown = true;
+      root.dataset.scene = "ready";
+    }
   }
 
   build();
@@ -211,6 +215,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
   // Nothing is drawn until the shaders are compiled; the first frame then sets data-scene="ready",
   // which fades the canvas in over the static rings (app/globals.css).
   let compiled = false;
+  let shown = false;
   let disposed = false;
   rings
     .compile(scene, camera)

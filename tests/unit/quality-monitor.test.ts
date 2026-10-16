@@ -1,13 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createQualityMonitor, type LiveTier } from "../../lib/quality-monitor.ts";
+import { createQualityMonitor, createRecoveryWatch, type Drop, type LiveTier } from "../../lib/quality-monitor.ts";
 
 // Feeds the monitor `seconds` of frames at a steady rate and returns the first drop it asks for.
 function run(tier: LiveTier, fps: number, seconds: number) {
   const monitor = createQualityMonitor(tier);
   for (let t = 0; t <= seconds * 1000; t += 1000 / fps) {
     const drop = monitor.frame(t);
-    if (drop) return { drop, at: t / 1000 };
+    if (drop) return { ...drop, at: t / 1000 };
   }
   return null;
 }
@@ -19,12 +19,12 @@ test("a steady 60 fps never drops, even over 60 s", () => {
 
 test("high under 45 fps drops to medium after two slow windows", () => {
   const r = run("high", 40, 30);
-  assert.equal(r?.drop, "medium");
+  assert.equal(r?.to, "medium");
   assert.ok(r && r.at >= 6 && r.at < 7, `dropped at ${r?.at}s`);
 });
 
 test("medium under 25 fps drops to the static rings", () => {
-  assert.equal(run("medium", 20, 30)?.drop, "low");
+  assert.equal(run("medium", 20, 30)?.to, "low");
 });
 
 test("an iPhone in Low Power Mode (30 fps) keeps medium", () => {
@@ -69,22 +69,46 @@ test("a browser holding frames back for a few seconds (2 fps), then running free
   }
 });
 
-test("a device drawing 5 fps goes straight to the static rings after four windows", () => {
+test("under 10 fps for four windows the scene goes straight to the static rings, marked held", () => {
   for (const tier of ["high", "medium"] as const) {
     const r = run(tier, 5, 30);
-    assert.equal(r?.drop, "low", tier);
+    assert.deepEqual(r && { from: r.from, to: r.to, held: r.held }, { from: tier, to: "low", held: true });
     assert.ok(r && r.at >= 9.9 && r.at < 10.5, `${tier} dropped at ${r?.at}s`);
   }
+});
+
+test("a device that is just too slow (20 fps) drops without the held mark, so it stays static", () => {
+  assert.equal(run("medium", 20, 30)?.held, false);
 });
 
 test("time without focus is reported but not judged", () => {
   const fps: number[] = [];
   const monitor = createQualityMonitor("medium", (f) => fps.push(f));
-  let drop = null;
+  let drop: Drop | null = null;
   let t = 0;
   for (; t < 20_000; t += 1000 / 20) drop ??= monitor.frame(t, false);
   assert.equal(drop, null);
   assert.ok(fps.length >= 8, `${fps.length} windows reported`);
   for (; t < 30_000; t += 1000 / 20) drop ??= monitor.frame(t, true);
-  assert.equal(drop, "low");
+  assert.equal(drop?.to, "low");
+});
+
+test("after held frames, the recovery watch waits while they last and calls the scene back once the page runs free", () => {
+  const watch = createRecoveryWatch();
+  let back = false;
+  let t = 0;
+  for (; t < 20_000; t += 1000 / 2) back ||= watch.frame(t);
+  assert.equal(back, false);
+  for (; t < 30_000 && !back; t += 1000 / 60) back = watch.frame(t);
+  assert.ok(back && t - 20_000 <= 4100, `back after ${t - 20_000} ms`);
+});
+
+test("the recovery watch counts only time with focus, and an iPhone in Low Power Mode (30 fps) is running free", () => {
+  const watch = createRecoveryWatch();
+  let back = false;
+  let t = 0;
+  for (; t < 10_000; t += 1000 / 30) back ||= watch.frame(t, false);
+  assert.equal(back, false);
+  for (; t < 20_000 && !back; t += 1000 / 30) back = watch.frame(t, true);
+  assert.equal(back, true);
 });
