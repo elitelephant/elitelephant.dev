@@ -20,6 +20,8 @@ export type Site = {
     title: string;
     description: string;
     ogAlt: string;
+    // The share image breaks the headline by phrase (Satori has no balanced wrapping). Same words as `front`.
+    shareLines: { watching: readonly string[]; building: readonly string[] };
     twitterCreator: string;
     themeColor: string;
   };
@@ -47,6 +49,10 @@ export const site = {
     title: "elitelephant",
     description: "I spent years watching from the sidelines. Now I'm building things.",
     ogAlt: "I spent years watching from the sidelines. Now I'm building things.",
+    shareLines: {
+      watching: ["I spent years", "watching from", "the sidelines."],
+      building: ["Now I'm", "building things."],
+    },
     twitterCreator: "@elitelephant",
     themeColor: "#8cfeb8",
   },

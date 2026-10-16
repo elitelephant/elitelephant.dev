@@ -45,11 +45,11 @@ test("metadata is in the HTML", async ({ page }) => {
   expect(await meta('meta[name="twitter:creator"]')).toBe("@elitelephant");
 
   const alt = "I spent years watching from the sidelines. Now I'm building things.";
-  expect(await meta('meta[property="og:image"]')).toMatch(/^https:\/\/elitelephant\.dev\/opengraph-image\.png/);
+  expect(await meta('meta[property="og:image"]')).toMatch(/^https:\/\/elitelephant\.dev\/opengraph-image\b/);
   expect(await meta('meta[property="og:image:width"]')).toBe("1200");
   expect(await meta('meta[property="og:image:height"]')).toBe("630");
   expect(await meta('meta[property="og:image:alt"]')).toBe(alt);
-  expect(await meta('meta[name="twitter:image"]')).toMatch(/^https:\/\/elitelephant\.dev\/twitter-image\.png/);
+  expect(await meta('meta[name="twitter:image"]')).toMatch(/^https:\/\/elitelephant\.dev\/twitter-image\b/);
   expect(await meta('meta[name="twitter:image:alt"]')).toBe(alt);
   await expect(page.locator('link[rel="icon"][type="image/svg+xml"]')).toHaveCount(1);
   await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveCount(1);
@@ -57,8 +57,8 @@ test("metadata is in the HTML", async ({ page }) => {
 
 test("share image and icons are served", async ({ request }) => {
   for (const [url, type] of [
-    ["/opengraph-image.png", "image/png"],
-    ["/twitter-image.png", "image/png"],
+    ["/opengraph-image", "image/png"],
+    ["/twitter-image", "image/png"],
     ["/icon.svg", "image/svg+xml"],
     ["/icon.png", "image/png"],
     ["/apple-icon.png", "image/png"],
