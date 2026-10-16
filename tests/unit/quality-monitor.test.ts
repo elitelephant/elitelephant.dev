@@ -57,3 +57,34 @@ test("reset() starts over with a new warm-up", () => {
   for (let t = 100_000; t < 101_900; t += 1000 / 60) monitor.frame(t);
   assert.equal(fps.length, 1);
 });
+
+test("a browser holding frames back for a few seconds (2 fps), then running free, never drops", () => {
+  for (const tier of ["high", "medium"] as const) {
+    const monitor = createQualityMonitor(tier);
+    let drop = null;
+    let t = 0;
+    for (; t < 8000; t += 1000 / 2) drop ??= monitor.frame(t);
+    for (; t < 40_000; t += 1000 / 60) drop ??= monitor.frame(t);
+    assert.equal(drop, null, tier);
+  }
+});
+
+test("a device drawing 5 fps goes straight to the static rings after four windows", () => {
+  for (const tier of ["high", "medium"] as const) {
+    const r = run(tier, 5, 30);
+    assert.equal(r?.drop, "low", tier);
+    assert.ok(r && r.at >= 9.9 && r.at < 10.5, `${tier} dropped at ${r?.at}s`);
+  }
+});
+
+test("time without focus is reported but not judged", () => {
+  const fps: number[] = [];
+  const monitor = createQualityMonitor("medium", (f) => fps.push(f));
+  let drop = null;
+  let t = 0;
+  for (; t < 20_000; t += 1000 / 20) drop ??= monitor.frame(t, false);
+  assert.equal(drop, null);
+  assert.ok(fps.length >= 8, `${fps.length} windows reported`);
+  for (; t < 30_000; t += 1000 / 20) drop ??= monitor.frame(t, true);
+  assert.equal(drop, "low");
+});

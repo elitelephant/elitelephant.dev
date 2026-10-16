@@ -16,6 +16,7 @@ function reportFps(fps: number) {
 
 // Keeps the scene affordable: stops drawing while the tab is hidden, and steps the quality down when the
 // frame rate can't keep up (unless ?lock). With reduced motion it only draws on change, so there is no rate to judge.
+// Only time with the page in focus is judged (see lib/quality-monitor.ts).
 export function Upkeep({ tier, reduce, lock, onDrop }: Props) {
   const setFrameloop = useThree((s) => s.setFrameloop);
   const dropped = useRef(false);
@@ -33,7 +34,7 @@ export function Upkeep({ tier, reduce, lock, onDrop }: Props) {
 
   useFrame(() => {
     if (reduce) return;
-    const next = monitor.frame(performance.now());
+    const next = monitor.frame(performance.now(), document.hasFocus());
     if (next && !lock && !dropped.current) {
       dropped.current = true;
       onDrop(next);
