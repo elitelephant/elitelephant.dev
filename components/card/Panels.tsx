@@ -1,12 +1,42 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 type Section = { id: string; label: string };
 type Props = { label: string; dotsLabel: string; sections: readonly Section[]; children: ReactNode };
 
 const smooth = (): ScrollBehavior => (matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth");
 const AIM_MS = 700; // while a smooth scroll runs, the next key counts from where it is heading
+const FIT_MIN = 0.78; // about 12.5 px for body text: below that, a panel scrolls rather than shrink further
+// A phone turned sideways leaves a box under 260 px tall; there the text may go down to about 10.3 px to fit.
+const SHORT_BOX = 260;
+const FIT_MIN_SHORT = 0.64;
+
+// Sets --fit on the box: the largest text scale, 1 at most, at which every panel fits without scrolling.
+function fitText(box: HTMLElement) {
+  const panels = [...box.querySelectorAll<HTMLElement>(".panel")];
+  const fits = (fit: number) => {
+    box.style.setProperty("--fit", String(fit));
+    return panels.every((panel) => {
+      const first = panel.firstElementChild as HTMLElement | null;
+      const last = panel.lastElementChild as HTMLElement | null;
+      if (!first || !last) return true;
+      const style = getComputedStyle(panel);
+      const room = box.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+      const end = last.offsetTop + last.offsetHeight + parseFloat(getComputedStyle(last).marginBottom);
+      return end - first.offsetTop <= room + 0.5;
+    });
+  };
+  if (fits(1)) return;
+  let lo = box.clientHeight < SHORT_BOX ? FIT_MIN_SHORT : FIT_MIN;
+  let hi = 1;
+  for (let i = 0; i < 7; i++) {
+    const mid = (lo + hi) / 2;
+    if (fits(mid)) lo = mid;
+    else hi = mid;
+  }
+  box.style.setProperty("--fit", lo.toFixed(3));
+}
 
 // The back's panels: one per section, snapping, with a dot per panel and keys that move one panel at a time.
 export function Panels({ label, dotsLabel, sections, children }: Props) {
@@ -24,6 +54,18 @@ export function Panels({ label, dotsLabel, sections, children }: Props) {
     aim.current = { top: clamped, at: performance.now() };
     box.scrollTo({ top: clamped, behavior: smooth() });
   };
+
+  // The text fits again whenever the card changes size: a turned phone, a resized window, a font that loads late.
+  useLayoutEffect(() => {
+    const box = boxRef.current;
+    if (!box) return;
+    const fit = () => fitText(box);
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(box);
+    document.fonts?.ready.then(fit);
+    return () => observer.disconnect();
+  }, []);
 
   // The active dot and the fade-in follow the panel that crosses the middle of the box, so tall panels count too.
   useEffect(() => {

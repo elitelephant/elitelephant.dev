@@ -50,10 +50,11 @@ const LAYOUTS = {
     const zone = { x: W / 2 - 430, y: H / 2 - 270, w: 860, h: 540 };
     return scatter(seeded(11), zone, 52, 10, 70);
   },
-  // Static fallback on phones: the card covers the bottom 74%, the bubbles live in the strip above it.
+  // Static fallback on phones (drawn at 390×844, shown centered and cropped to the screen): the card sits in the
+  // middle (335×490), the bubbles live in the strips above and below it.
   'fallback-tall': () => {
-    const zone = { x: -50, y: H * 0.24, w: W + 100, h: H };
-    return scatter(seeded(5), zone, 12, 8, 46, { x: 0, y: 0, w: W, h: H * 0.24 });
+    const zone = { x: -50, y: H / 2 - 245, w: W + 100, h: 490 };
+    return scatter(seeded(5), zone, 22, 8, 46);
   },
 };
 

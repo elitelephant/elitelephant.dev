@@ -63,3 +63,18 @@ for (const [name, { view, card }] of Object.entries(CARDS)) {
     expect(rect).toEqual(card);
   });
 }
+
+// The back's text shrinks to fit its card (down to about 12.5 px, or 10.3 px on a phone turned sideways), so no panel
+// needs scrolling.
+for (const [width, height] of SIZES) {
+  test(`every panel reads without scrolling at ${width}x${height}`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await page.goto("/?quality=low");
+    await page.getByRole("button", { name: text.flip }).click();
+    await expect(page.locator("#back")).not.toHaveAttribute("inert");
+    await page.evaluate(() => document.fonts.ready);
+    const extra = await page.locator("#panels").evaluate((box) =>
+      [...box.querySelectorAll<HTMLElement>(".panel")].map((panel) => `${panel.id} ${panel.offsetHeight - box.clientHeight}`));
+    expect(extra).toEqual(site.back.panels.map(({ id }) => `${id} 0`));
+  });
+}
