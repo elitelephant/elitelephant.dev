@@ -15,6 +15,12 @@ const SPACING = `* { line-height: 1.5 !important; letter-spacing: .12em !importa
   p { margin-bottom: 2em !important; }`;
 
 async function frontInsideCard(page: Page) {
+  // Scrolled to its start, the stage shows the card's top: nothing sits above where scrolling can reach.
+  const top = await page.evaluate(() => {
+    document.querySelector(".stage")!.scrollTo({ top: 0, behavior: "instant" });
+    return document.getElementById("card")!.getBoundingClientRect().top;
+  });
+  expect(top, "the card's top").toBeGreaterThanOrEqual(0);
   const outside = await page.evaluate(() => {
     const card = document.getElementById("card")!.getBoundingClientRect();
     return [...document.querySelectorAll("#front .hi, #front h1, #front .links a, #front .flip")]
@@ -31,6 +37,9 @@ async function frontInsideCard(page: Page) {
 async function everyPanelReads(page: Page) {
   await page.getByRole("button", { name: text.flip }).click();
   await expect(page.locator("#back")).not.toHaveAttribute("inert");
+  // The back shows from its top, even when the stage had scrolled down to reach the button.
+  await expect.poll(() => page.locator("#card").evaluate((el) => el.getBoundingClientRect().top), { message: "the back's top" })
+    .toBeGreaterThanOrEqual(0);
   for (const { id } of site.back.panels) {
     const last = page.locator(`#${id} > *`).last();
     await last.scrollIntoViewIfNeeded();

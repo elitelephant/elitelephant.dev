@@ -21,6 +21,8 @@ export function FlipCard({ label, backLabel, front, back }: Props) {
     shown.current = flipped;
     const target = flipped ? "#panels" : '[data-flip="front"]';
     cardRef.current?.querySelector<HTMLElement>(target)?.focus({ preventScroll: true });
+    // On a card taller than the screen the stage was scrolled down to the flip button; the back starts at its top.
+    if (flipped && document.documentElement.hasAttribute("data-tall")) cardRef.current?.parentElement?.scrollTo({ top: 0 });
   }, [flipped]);
 
   useEffect(() => {
