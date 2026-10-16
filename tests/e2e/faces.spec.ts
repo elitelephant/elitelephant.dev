@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { expectAngle, moveAway, turnOver } from "./helpers";
+import { expectAngle, moveAway, text, turnOver } from "./helpers";
 
 // Headless WebKit draws the turned card in software at about 10 fps, so the spring takes several seconds to settle.
 const SLOW = 30_000;
@@ -14,7 +14,7 @@ test("only the face looking at you can be seen", async ({ page }, testInfo) => {
   expect(await style(page, "#back", "opacity")).toBe("0");
   await testInfo.attach("front", { body: await page.screenshot(), contentType: "image/png" });
 
-  await page.getByRole("button", { name: "Who's behind this?" }).click();
+  await page.getByRole("button", { name: text.flip }).click();
   await moveAway(page);
   await expectAngle(page, 180, SLOW);
   expect(await style(page, "#front", "opacity")).toBe("0");

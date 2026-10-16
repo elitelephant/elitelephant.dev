@@ -10,7 +10,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [["github"], ["list"]] : "list",
-  use: { baseURL: `http://localhost:${PORT}` },
+  // A test that fails in CI runs again with a trace, so there is something to open when it fails twice.
+  use: { baseURL: `http://localhost:${PORT}`, trace: "on-first-retry" },
   projects: [
     // Everything that works without WebGL.
     { name: "chromium", testIgnore: SCENE, use: { ...devices["Desktop Chrome"] } },
