@@ -1,32 +1,48 @@
-// Picks how much scene a device gets. low means no 3D at all: the static rings stay.
+// Picks how much scene a device starts with, and the most it may get. low means no 3D at all: the static rings stay.
+// From there the frame rate decides (lib/quality-monitor.ts): the scene steps down when it can't keep up, and up to the
+// ceiling when it has room.
 import type { Quality } from "./params.ts";
 
 export type Probe = {
   webgl2: boolean;
+  // A WebGL2 context also comes up when asked to fail on a major performance caveat. Browsers refuse it when they fell
+  // back to drawing on the CPU for a GPU they don't trust, and they can't mask it the way they mask the GPU's name.
+  capable: boolean;
   renderer?: string; // unmasked GPU name, when the browser shares it
   cores?: number;
   memory?: number; // GB; only Chromium reports it
-  width: number;
+  touch: boolean; // the main pointer is a finger
 };
 
-const SOFTWARE_GPU = /swiftshader|llvmpipe|softpipe|software|basic render/i;
+export type Plan = { start: Quality; ceiling: Quality };
 
-export function pickQuality(forced: Quality | null, probe: Probe): Quality {
-  if (forced) return forced;
-  if (!probe.webgl2) return "low";
+const SOFTWARE_GPU = /swiftshader|llvmpipe|softpipe|software|basic render/i;
+const NONE: Plan = { start: "low", ceiling: "low" };
+
+export function pickQuality(forced: Quality | null, probe: Probe): Plan {
+  // Phones and tablets stop at medium, for their battery and heat, whatever their width or way up.
+  const ceiling: Quality = probe.touch ? "medium" : "high";
+  if (forced) return { start: forced, ceiling: forced === "high" ? "high" : ceiling };
+  if (!probe.webgl2 || !probe.capable) return NONE;
   // A GPU emulated on the CPU can't hold the scene; it would only slow the page down.
-  if (probe.renderer && SOFTWARE_GPU.test(probe.renderer)) return "low";
-  const cores = probe.cores ?? 4;
-  // Safari and Firefox don't report memory; unknown counts as enough (Macs used to get medium for this).
-  const memory = probe.memory ?? 8;
-  if (cores <= 4 || memory <= 4 || probe.width < 760) return "medium";
-  return "high";
+  if (probe.renderer && SOFTWARE_GPU.test(probe.renderer)) return NONE;
+  // Cores and memory only choose where to start: browsers report less than there is (Brave makes up new numbers for
+  // each site and session), so a strong machine may start at medium and step up once it shows the frame rate.
+  // Safari and Firefox don't report memory; unknown counts as enough.
+  const small = (probe.cores ?? 4) <= 4 || (probe.memory ?? 8) <= 4;
+  return { start: small ? "medium" : ceiling, ceiling };
 }
 
 // Reads the device once, in the browser.
 export function probeDevice(): Probe {
   const nav = navigator as Navigator & { deviceMemory?: number };
-  const probe: Probe = { webgl2: false, cores: nav.hardwareConcurrency, memory: nav.deviceMemory, width: innerWidth };
+  const probe: Probe = {
+    webgl2: false,
+    capable: false,
+    cores: nav.hardwareConcurrency,
+    memory: nav.deviceMemory,
+    touch: matchMedia("(pointer: coarse)").matches,
+  };
   try {
     const gl = document.createElement("canvas").getContext("webgl2");
     if (gl) {
@@ -34,6 +50,9 @@ export function probeDevice(): Probe {
       const info = gl.getExtension("WEBGL_debug_renderer_info");
       if (info) probe.renderer = String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL));
       gl.getExtension("WEBGL_lose_context")?.loseContext();
+      const strict = document.createElement("canvas").getContext("webgl2", { failIfMajorPerformanceCaveat: true });
+      probe.capable = strict !== null;
+      strict?.getExtension("WEBGL_lose_context")?.loseContext();
     }
   } catch {
     probe.webgl2 = false;

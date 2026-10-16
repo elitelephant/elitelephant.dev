@@ -5,7 +5,7 @@ import { Component, useCallback, useEffect, useRef, useState, type ReactNode } f
 import { flipStore } from "@/lib/flip-store";
 import { readParams, type Quality } from "@/lib/params";
 import { pickQuality, probeDevice } from "@/lib/quality";
-import { createRecoveryWatch, type Drop, type LiveTier } from "@/lib/quality-monitor";
+import { createRecoveryWatch, type LiveTier, type Step } from "@/lib/quality-monitor";
 import { DebugPanel } from "./DebugPanel";
 
 // The 3D chunk is only downloaded when a device gets the scene.
@@ -36,7 +36,9 @@ const markTier = (tier: Quality) => {
 // ?scene=0 leaves only the static rings.
 export function SceneLoader() {
   const [live, setLive] = useState<LiveTier | null>(null);
-  const [options, setOptions] = useState({ lock: false, debug: false, tier: "low" as Quality });
+  const [options, setOptions] = useState({ lock: false, debug: false, tier: "low" as Quality, ceiling: "low" as Quality });
+  // Whether the scene may still step up to high: closed once this device proved too slow for it.
+  const [highOpen, setHighOpen] = useState(true);
   // The tier waiting to come back after a drop for held frames, and whether that one comeback was already given.
   const [comeback, setComeback] = useState<LiveTier | null>(null);
   const cameBack = useRef(false);
@@ -46,10 +48,10 @@ export function SceneLoader() {
     markTier("low");
     let cancel = () => {};
     const start = () => {
-      const quality = params.scene ? pickQuality(params.quality, probeDevice()) : "low";
-      markTier(quality);
-      setOptions({ lock: params.lock, debug: params.debug, tier: quality });
-      if (quality !== "low") setLive(quality);
+      const { start, ceiling } = params.scene ? pickQuality(params.quality, probeDevice()) : { start: "low" as const, ceiling: "low" as const };
+      markTier(start);
+      setOptions({ lock: params.lock, debug: params.debug, tier: start, ceiling });
+      if (start !== "low") setLive(start);
     };
     const whenIdle = () => {
       if (typeof window.requestIdleCallback === "function") {
@@ -68,10 +70,12 @@ export function SceneLoader() {
     };
   }, []);
 
-  // Too slow for its tier: high steps down to medium; medium fades out and leaves the static rings.
-  // If it went because the browser held frames back, the scene comes back once when the browser runs normally again;
-  // a second drop keeps the static rings.
-  const onDrop = useCallback(({ from, to, held }: Drop) => {
+  // One rule for every step. Too slow for its tier: high steps down to medium; medium fades out and leaves the static
+  // rings, and that tier is closed for good. With room to spare, medium steps up to high, unless high was already too
+  // slow. If the scene went because the browser held frames back, the device isn't to blame: it comes back once when
+  // the browser runs normally again; a second drop keeps the static rings.
+  const onStep = useCallback(({ from, to, held }: Step) => {
+    if (from === "high" && !held) setHighOpen(false);
     markTier(to);
     setOptions((o) => ({ ...o, tier: to }));
     if (to !== "low") return setLive(to);
@@ -111,7 +115,12 @@ export function SceneLoader() {
     <>
       {live && (
         <Boundary>
-          <Scene tier={live} lock={options.lock} onDrop={onDrop} />
+          <Scene
+            tier={live}
+            canRise={live === "medium" && options.ceiling === "high" && highOpen}
+            lock={options.lock}
+            onStep={onStep}
+          />
         </Boundary>
       )}
       {options.debug && <DebugPanel tier={options.tier} />}

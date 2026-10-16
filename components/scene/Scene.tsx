@@ -2,19 +2,19 @@
 
 import { Canvas } from "@react-three/fiber";
 import { useState } from "react";
-import type { Drop, LiveTier } from "@/lib/quality-monitor";
+import type { LiveTier, Step } from "@/lib/quality-monitor";
 import { CAM_Z, FOV } from "./layout";
 import { Upkeep } from "./Upkeep";
 import { World } from "./World";
 
-type Props = { tier: LiveTier; lock: boolean; onDrop: (drop: Drop) => void };
+type Props = { tier: LiveTier; canRise: boolean; lock: boolean; onStep: (step: Step) => void };
 
 const COUNT: Record<LiveTier, number> = { high: 64, medium: 44 };
 const MAX_DPR: Record<LiveTier, number> = { high: 2, medium: 1.5 };
 
 // Behind the card, in two passes: the bubbles' light, then the rings.
 // With reduced motion nothing moves, so it renders only when something changes.
-export default function Scene({ tier, lock, onDrop }: Props) {
+export default function Scene({ tier, canRise, lock, onStep }: Props) {
   const [reduce] = useState(() => matchMedia("(prefers-reduced-motion: reduce)").matches);
   return (
     <Canvas
@@ -29,7 +29,7 @@ export default function Scene({ tier, lock, onDrop }: Props) {
       frameloop={reduce ? "demand" : "always"}
     >
       <World count={COUNT[tier]} reduce={reduce} />
-      <Upkeep tier={tier} reduce={reduce} lock={lock} onDrop={onDrop} />
+      <Upkeep tier={tier} canRise={canRise} reduce={reduce} lock={lock} onStep={onStep} />
     </Canvas>
   );
 }

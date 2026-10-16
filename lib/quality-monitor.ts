@@ -1,14 +1,17 @@
-// Watches the frame rate and says when the scene should step down. Real time (performance.now), 2 s windows,
+// Watches the frame rate and says when the scene should step down, or up. Real time (performance.now), 2 s windows,
 // after a 2 s warm-up so shader compiling and the first layout don't count.
 export type LiveTier = "high" | "medium";
 // `held`: the scene goes because the browser held frames back, so it may come back once (createRecoveryWatch).
-export type Drop = { from: LiveTier; to: LiveTier | "low"; held: boolean };
+export type Step = { from: LiveTier; to: LiveTier | "low"; held: boolean };
 
 export const WARMUP_MS = 2000;
 export const WINDOW_MS = 2000;
 // high → medium under 45 fps; medium → static rings under 25, not 30: iPhones in Low Power Mode run at 30.
 const FLOOR: Record<LiveTier, number> = { high: 45, medium: 25 };
 const SLOW_WINDOWS = 2;
+// medium → high when it has room: three windows in a row (6 s) at 55 fps or more, close to a 60 Hz screen's full rate.
+const RISE_FPS = 55;
+const RISE_WINDOWS = 3;
 // Under 10 fps the browser may be holding frames back (a window in the background, an automated browser) rather than
 // failing to draw, so a few seconds of it are waited out. Four such windows in a row (8 s) and the scene goes
 // straight to the static rings: a device that slow could not hold even medium, and the card would turn in slow motion.
@@ -56,9 +59,11 @@ function createWindows(warmup: number, onFps: (fps: number) => void) {
   };
 }
 
-export function createQualityMonitor(tier: LiveTier, onFps: (fps: number) => void = () => {}) {
+// `canRise`: whether the tier above is open to this device (see SceneLoader).
+export function createQualityMonitor(tier: LiveTier, onFps: (fps: number) => void = () => {}, canRise = false) {
   const windows = createWindows(WARMUP_MS, onFps);
   let slow = 0;
+  let fast = 0;
   let held = 0;
 
   return {
@@ -66,10 +71,11 @@ export function createQualityMonitor(tier: LiveTier, onFps: (fps: number) => voi
     reset() {
       windows.reset();
       slow = 0;
+      fast = 0;
       held = 0;
     },
-    // Call once per frame, with whether the page has focus. Returns where to drop to, or null to stay.
-    frame(now: number, focused = true): Drop | null {
+    // Call once per frame, with whether the page has focus. Returns where to step to, or null to stay.
+    frame(now: number, focused = true): Step | null {
       const fps = windows.frame(now, focused);
       if (fps === null) return null;
       if (fps < HELD_FPS) {
@@ -78,8 +84,10 @@ export function createQualityMonitor(tier: LiveTier, onFps: (fps: number) => voi
       }
       held = 0;
       slow = fps < FLOOR[tier] ? slow + 1 : 0;
-      if (slow < SLOW_WINDOWS) return null;
-      return { from: tier, to: tier === "high" ? "medium" : "low", held: false };
+      fast = canRise && tier === "medium" && fps >= RISE_FPS ? fast + 1 : 0;
+      if (slow >= SLOW_WINDOWS) return { from: tier, to: tier === "high" ? "medium" : "low", held: false };
+      if (fast >= RISE_WINDOWS) return { from: tier, to: "high", held: false };
+      return null;
     },
   };
 }

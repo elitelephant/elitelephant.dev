@@ -35,24 +35,42 @@ async function turnOver(page: Page) {
 // The page's clock moves a fixed 1000/fps ms per animation frame, so the quality monitor measures exactly `fps`
 // however fast or slow the machine running the test really draws: a device that holds the scene at that rate.
 // Between frames it runs as usual, stopping short of the next frame's tick so it never goes backwards.
+// setFrameRate changes the rate on a page that is already running.
 async function frameRate(page: Page, fps: number) {
   await page.addInitScript((fps) => {
+    const w = window as unknown as { __fps: number };
+    w.__fps = fps;
     const real = performance.now.bind(performance);
-    const step = 1000 / fps;
-    let frames = 0;
+    let step = 1000 / fps;
+    let now = 0;
     let frameStart = real();
     let lastStamp = -1;
-    performance.now = () => frames * step + Math.min(real() - frameStart, step * 0.9);
+    performance.now = () => now + Math.min(real() - frameStart, step * 0.9);
     const raf = window.requestAnimationFrame.bind(window);
     window.requestAnimationFrame = (callback) => raf((stamp) => {
       if (stamp !== lastStamp) {
         lastStamp = stamp;
-        frames++;
+        step = 1000 / w.__fps;
+        now += step;
         frameStart = real();
       }
       callback(stamp);
     });
   }, fps);
+}
+
+const setFrameRate = (page: Page, fps: number) =>
+  page.evaluate((fps) => void ((window as unknown as { __fps: number }).__fps = fps), fps);
+
+// Waits until the page's own clock (see frameRate) has run `ms` further. That clock moves with animation frames, and
+// with the scene gone nothing may be asking for them, so a frame loop of the test's own keeps it going.
+async function pageTimePasses(page: Page, ms: number) {
+  const from = await page.evaluate(() => {
+    const tick = () => requestAnimationFrame(tick);
+    requestAnimationFrame(tick);
+    return performance.now();
+  });
+  await expect.poll(() => page.evaluate(() => performance.now()), { timeout: 100_000 }).toBeGreaterThan(from + ms);
 }
 
 // Under both floors (45 fps for high, 25 for medium), and well over the 10 fps under which a window is taken for
@@ -158,6 +176,72 @@ test("a device too slow for the scene steps down to medium, then fades it out fo
   await expect(page.locator(".scene")).toHaveCount(0);
   await expect(html(page)).not.toHaveAttribute("data-scene", "ready");
   expect(errors).toEqual([]);
+});
+
+// Browsers can report fewer cores or less memory than there are (Brave makes up new numbers for each site), so a
+// strong machine may start at medium; once it holds the frame rate, it steps up. A small window, so SwiftShader draws
+// the frames it takes quickly.
+test("a device with room to spare steps up from medium to high", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 480, height: 360 });
+  const log = await recordScene(page);
+  await frameRate(page, 60);
+  await page.goto("/?quality=medium");
+  await expect.poll(async () => (await log()).tiers, { timeout: 100_000 }).toEqual(["low", "medium", "high"]);
+  expect((await log()).bubbles).toEqual(["44", "64"]);
+});
+
+// High proved too slow once: back at medium the scene keeps it, however fast medium runs, rather than go back and forth.
+test("a tier the device was too slow for stays closed", async ({ page }) => {
+  test.setTimeout(180_000);
+  await page.setViewportSize({ width: 480, height: 360 });
+  const log = await recordScene(page);
+  const tiers = async () => (await log()).tiers;
+  await frameRate(page, 60);
+  await page.goto("/?quality=medium");
+  await expect.poll(tiers, { timeout: 100_000 }).toEqual(["low", "medium", "high"]);
+  await setFrameRate(page, 40);
+  await expect.poll(tiers, { timeout: 100_000 }).toEqual(["low", "medium", "high", "medium"]);
+  await setFrameRate(page, 60);
+  // Longer than stepping up took the first time.
+  await pageTimePasses(page, 12_000);
+  expect(await tiers()).toEqual(["low", "medium", "high", "medium"]);
+});
+
+test.describe("on a touch screen", () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 360, height: 640 } });
+
+  test("the scene stays at medium however fast it runs", async ({ page }) => {
+    test.setTimeout(120_000);
+    const log = await recordScene(page);
+    await frameRate(page, 60);
+    await sceneReady(page, "/?quality=medium");
+    // The warm-up and five windows: longer than stepping up takes on a machine with a mouse.
+    await expect.poll(async () => (await log()).fpsReports, { timeout: 100_000 }).toBeGreaterThanOrEqual(6);
+    expect((await log()).tiers).toEqual(["low", "medium"]);
+  });
+
+  // A browser that holds frames back (a window behind others, a busy machine) looks like a very slow device. The scene
+  // goes, and comes back by itself once the page runs freely; if it happens again, the static rings stay.
+  test("after held frames the scene comes back once, and the second time it stays away", async ({ page }) => {
+    test.setTimeout(180_000);
+    const log = await recordScene(page);
+    const tiers = async () => (await log()).tiers;
+    await frameRate(page, 60);
+    await sceneReady(page, "/?quality=medium");
+    await setFrameRate(page, 5);
+    await expect.poll(tiers, { timeout: 100_000 }).toEqual(["low", "medium", "low"]);
+    await setFrameRate(page, 60);
+    await expect.poll(tiers, { timeout: 100_000 }).toEqual(["low", "medium", "low", "medium"]);
+    await expect(html(page)).toHaveAttribute("data-scene", "ready", { timeout: 20_000 });
+    await setFrameRate(page, 5);
+    await expect.poll(tiers, { timeout: 100_000 }).toEqual(["low", "medium", "low", "medium", "low"]);
+    await setFrameRate(page, 60);
+    // Longer than it took to come back the first time.
+    await pageTimePasses(page, 10_000);
+    expect(await tiers()).toEqual(["low", "medium", "low", "medium", "low"]);
+    await expect(page.locator(".scene")).toHaveCount(0);
+  });
 });
 
 test("?lock keeps the tier on a device too slow for it", async ({ page }) => {

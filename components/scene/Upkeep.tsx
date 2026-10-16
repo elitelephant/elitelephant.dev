@@ -2,9 +2,9 @@
 
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
-import { createQualityMonitor, type Drop, type LiveTier } from "@/lib/quality-monitor";
+import { createQualityMonitor, type LiveTier, type Step } from "@/lib/quality-monitor";
 
-type Props = { tier: LiveTier; reduce: boolean; lock: boolean; onDrop: (drop: Drop) => void };
+type Props = { tier: LiveTier; canRise: boolean; reduce: boolean; lock: boolean; onStep: (step: Step) => void };
 
 export const FPS_EVENT = "scene-fps";
 
@@ -15,15 +15,15 @@ function reportFps(fps: number) {
 }
 
 // Keeps the scene affordable: stops drawing while the tab is hidden, and steps the quality down when the
-// frame rate can't keep up (unless ?lock). With reduced motion it only draws on change, so there is no rate to judge.
-// Only time with the page in focus is judged (see lib/quality-monitor.ts).
-export function Upkeep({ tier, reduce, lock, onDrop }: Props) {
+// frame rate can't keep up, or up when it has room (unless ?lock). With reduced motion it only draws on change, so
+// there is no rate to judge. Only time with the page in focus is judged (see lib/quality-monitor.ts).
+export function Upkeep({ tier, canRise, reduce, lock, onStep }: Props) {
   const setFrameloop = useThree((s) => s.setFrameloop);
-  const dropped = useRef(false);
-  const monitor = useMemo(() => createQualityMonitor(tier, reportFps), [tier]);
+  const stepped = useRef(false);
+  const monitor = useMemo(() => createQualityMonitor(tier, reportFps, canRise), [tier, canRise]);
 
   useEffect(() => {
-    dropped.current = false;
+    stepped.current = false;
     const onVisibility = () => {
       monitor.reset();
       setFrameloop(document.hidden ? "never" : reduce ? "demand" : "always");
@@ -34,10 +34,10 @@ export function Upkeep({ tier, reduce, lock, onDrop }: Props) {
 
   useFrame(() => {
     if (reduce) return;
-    const drop = monitor.frame(performance.now(), document.hasFocus());
-    if (drop && !lock && !dropped.current) {
-      dropped.current = true;
-      onDrop(drop);
+    const step = monitor.frame(performance.now(), document.hasFocus());
+    if (step && !lock && !stepped.current) {
+      stepped.current = true;
+      onStep(step);
     }
   });
 

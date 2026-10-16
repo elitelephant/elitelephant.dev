@@ -1,13 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createQualityMonitor, createRecoveryWatch, type Drop, type LiveTier } from "../../lib/quality-monitor.ts";
+import { createQualityMonitor, createRecoveryWatch, type LiveTier, type Step } from "../../lib/quality-monitor.ts";
 
-// Feeds the monitor `seconds` of frames at a steady rate and returns the first drop it asks for.
-function run(tier: LiveTier, fps: number, seconds: number) {
-  const monitor = createQualityMonitor(tier);
+// Feeds the monitor `seconds` of frames at a steady rate and returns the first step it asks for.
+function run(tier: LiveTier, fps: number, seconds: number, canRise = false) {
+  const monitor = createQualityMonitor(tier, () => {}, canRise);
   for (let t = 0; t <= seconds * 1000; t += 1000 / fps) {
-    const drop = monitor.frame(t);
-    if (drop) return { ...drop, at: t / 1000 };
+    const step = monitor.frame(t);
+    if (step) return { ...step, at: t / 1000 };
   }
   return null;
 }
@@ -84,7 +84,7 @@ test("a device that is just too slow (20 fps) drops without the held mark, so it
 test("time without focus is reported but not judged", () => {
   const fps: number[] = [];
   const monitor = createQualityMonitor("medium", (f) => fps.push(f));
-  let drop: Drop | null = null;
+  let drop: Step | null = null;
   let t = 0;
   for (; t < 20_000; t += 1000 / 20) drop ??= monitor.frame(t, false);
   assert.equal(drop, null);
@@ -111,4 +111,27 @@ test("the recovery watch counts only time with focus, and an iPhone in Low Power
   assert.equal(back, false);
   for (; t < 20_000 && !back; t += 1000 / 30) back = watch.frame(t, true);
   assert.equal(back, true);
+});
+
+test("with the tier above open, medium at a steady 60 fps steps up to high after three fast windows", () => {
+  const r = run("medium", 60, 30, true);
+  assert.deepEqual(r && { to: r.to, held: r.held }, { to: "high", held: false });
+  assert.ok(r && r.at >= 8 && r.at < 9, `stepped up at ${r?.at}s`);
+});
+
+test("medium never steps up when the tier above is closed, or without room to spare", () => {
+  assert.equal(run("medium", 60, 60, false), null);
+  assert.equal(run("medium", 50, 60, true), null);
+  assert.equal(run("high", 60, 60, true), null);
+});
+
+test("one fast window between slow ones does not step up", () => {
+  const monitor = createQualityMonitor("medium", () => {}, true);
+  let step: Step | null = null;
+  let t = 0;
+  for (const fps of [60, 60, 40, 60, 60, 40, 60, 60, 40]) {
+    // a 2 s window at each rate, after the 2 s warm-up
+    for (const end = t + (t === 0 ? 4000 : 2000); t < end; t += 1000 / fps) step ??= monitor.frame(t);
+  }
+  assert.equal(step, null);
 });
