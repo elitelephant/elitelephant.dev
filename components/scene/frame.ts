@@ -9,6 +9,13 @@ const BREATH = (2 * Math.PI) / 5; // one slow breath every ~5 s
 export const BREATH_SCALE = 0.06; // swells and shrinks ±6%
 const BREATH_LEAN = 0.08; // and leans out a little as it swells
 
+// Motion that starts by itself has to stop within 5 s (WCAG 2.2.2). After the last mouse move, touch or turn, the
+// front's drift and the frame's breathing keep going for SETTLE_HOLD seconds, then slow to a stop over SETTLE_EASE.
+export const SETTLE_HOLD = 3.5;
+export const SETTLE_EASE = 1.5;
+// How fast the drift and breathing run, `idle` seconds after the last interaction: full speed, then down to still.
+export const pace = (idle: number) => Math.min(1, Math.max(0, 1 - (idle - SETTLE_HOLD) / SETTLE_EASE));
+
 export function frontTarget(b: Ball, t: number, out: Vector3) {
   return out.set(b.home.x + Math.sin(t * 0.4 + b.phase) * 0.45, b.home.y + Math.cos(t * 0.33 + b.phase) * 0.35, b.home.z);
 }

@@ -256,17 +256,46 @@ test("?lock keeps the tier on a device too slow for it", async ({ page }) => {
   await expect(html(page)).toHaveAttribute("data-bubbles", "64");
 });
 
-// Right after the turn the bubbles are still settling from the kick, and that alone changes the picture. Measured
-// without breathing, two shots 1.2 s apart differ by about 3% of their pixels 4 s after the card stops and under
-// 0.3% after 6 s; with it, by about 6% all along.
-test("the frame breathes", async ({ page }) => {
+// Motion that starts by itself stops within 5 s (WCAG 2.2.2): the front's drift and the frame's breathing settle a few
+// seconds after the last mouse move, touch or turn. The bubbles then come to rest, which on SwiftShader's few frames
+// per second takes several seconds more: two shots 1.2 s apart, until they barely differ. With the pointer resting in a
+// corner, bubbles at rest differ by under 0.3% of their pixels; a breathing frame, by about 6%.
+async function comesToRest(page: Page) {
+  await expect.poll(async () => {
+    const a = await page.screenshot();
+    await page.waitForTimeout(1200);
+    return changedShare(page, a, await page.screenshot());
+  }, { timeout: 40_000, intervals: [0] }).toBeLessThan(0.003);
+}
+
+test("the front's drift settles by itself within 5 s", async ({ page }) => {
+  test.setTimeout(120_000);
+  await sceneReady(page, "/?quality=medium&lock");
+  const ready = Date.now();
+  await expect(html(page)).toHaveAttribute("data-scene-motion", "still", { timeout: 10_000 });
+  expect(Date.now() - ready, "ms until still").toBeLessThan(6_000);
+  await comesToRest(page);
+
+  // A mouse move brings it back for a few seconds.
+  await page.mouse.move(2, 2);
+  await expect(html(page)).toHaveAttribute("data-scene-motion", "moving");
+  await expect(html(page)).toHaveAttribute("data-scene-motion", "still", { timeout: 10_000 });
+});
+
+test("the frame breathes when the back arrives, then holds still while you read", async ({ page }) => {
+  test.setTimeout(120_000);
   await sceneReady(page, "/?quality=medium&lock");
   await turnOver(page);
-  await page.waitForTimeout(7000);
-  const a = await page.screenshot();
+  await expect(html(page)).toHaveAttribute("data-scene-motion", "still", { timeout: SLOW });
+  await comesToRest(page);
+
+  // Moving the mouse, without pushing anything, wakes the breathing.
+  await page.mouse.move(2, 2);
+  await expect(html(page)).toHaveAttribute("data-scene-motion", "moving");
+  const c = await page.screenshot();
   await page.waitForTimeout(1200);
-  const b = await page.screenshot();
-  expect(await changedShare(page, a, b)).toBeGreaterThan(0.02);
+  const d = await page.screenshot();
+  expect(await changedShare(page, c, d), "breathing").toBeGreaterThan(0.02);
 });
 
 test.describe("with reduced motion", () => {

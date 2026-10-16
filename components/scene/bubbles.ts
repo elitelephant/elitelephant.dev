@@ -1,11 +1,12 @@
 // The bubbles, their physics and the pointer, outside React. Front: scattered, drifting, pushed by the cursor,
-// grabbed and thrown. Back: a loose crowd around the card that holds still and breathes.
+// grabbed and thrown. Back: a loose crowd around the card that holds still and breathes. Drifting and breathing settle
+// a few seconds after the last interaction (see pace in ./frame).
 import * as THREE from "three";
 import { createOwnEngine } from "@/components/physics/own";
 import type { Engine } from "@/components/physics/engine";
 import { flipStore } from "@/lib/flip-store";
 import { seeded } from "@/lib/random";
-import { BREATH_SCALE, breath, frameTarget, frontTarget } from "./frame";
+import { BREATH_SCALE, breath, frameTarget, frontTarget, pace } from "./frame";
 import { computeLayout, makeBalls, type Ball, type CardRect, type Layout } from "./layout";
 import { createRings } from "./rings";
 import { lightFrag, lightVert } from "./shaders";
@@ -45,6 +46,13 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
   let mode: Mode = flipStore.get().flipped ? "gather" : "scatter";
   let breathAmount = 0;
   let time = 0;
+  // The drift and breathing run on their own clock, which slows to a stop when nothing happens (see pace).
+  let motion = 0;
+  let activeAt = 0;
+  let moving = true;
+  const wake = () => {
+    activeAt = time;
+  };
   let still = false; // reduced motion: positions are worked out once per change, then left alone
 
   const cardRect = (): CardRect => {
@@ -75,7 +83,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
     engine = createOwnEngine(balls);
     // Rebuilt while the back shows (a resize): start in the seats, apart, instead of flying in from the front.
     if (mode === "gather") {
-      updateTargets(time);
+      updateTargets(motion);
       engine.teleport(targets);
       engine.settle();
     }
@@ -88,6 +96,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
     mode = next;
     root.dataset.sceneMode = mode;
     still = false;
+    wake();
     invalidate();
   };
   const unsubscribe = flipStore.subscribe(() => setMode(flipStore.get().flipped ? "gather" : "scatter"));
@@ -121,6 +130,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
     lastTime = now;
   };
   const onMove = (e: PointerEvent) => {
+    wake();
     if (!toWorld(e)) return;
     trackVelocity(e.timeStamp);
     if (grabbing >= 0) return engine.drag(world);
@@ -131,6 +141,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
     if (!e.relatedTarget) hover = false;
   };
   const onDown = (e: PointerEvent) => {
+    wake();
     if (reduce || !toWorld(e)) return;
     touchDown = e.pointerType !== "mouse";
     lastWorld.copy(world);
@@ -188,7 +199,14 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
         still = true;
       }
     } else {
-      updateTargets(t);
+      const speed = pace(t - activeAt);
+      motion += dt * speed;
+      // For tests: whether the drift and breathing have settled.
+      if (moving !== speed > 0) {
+        moving = speed > 0;
+        root.dataset.sceneMotion = moving ? "moving" : "still";
+      }
+      updateTargets(motion);
       engine.setTargets(targets);
       engine.setPointer(hover && grabbing < 0 ? scratch.copy(world) : null, 2.6 * Math.max(layout.scale, 0.6), 60);
       engine.step(dt);
@@ -197,7 +215,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
       const framed = mode === "gather";
       breathAmount += ((framed ? 1 : 0) - breathAmount) * Math.min(1, dt * 1.5);
       if (breathAmount > 0.001 || framed) {
-        for (let i = 0; i < meshes.length; i++) meshes[i].scale.setScalar(balls[i].r * (1 + breath(balls[i], t, breathAmount) * BREATH_SCALE));
+        for (let i = 0; i < meshes.length; i++) meshes[i].scale.setScalar(balls[i].r * (1 + breath(balls[i], motion, breathAmount) * BREATH_SCALE));
       }
     }
     rings.render(scene, camera);
@@ -210,6 +228,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
 
   build();
   root.dataset.sceneMode = mode;
+  root.dataset.sceneMotion = "moving";
   root.dataset.bubbles = String(count);
 
   // Nothing is drawn until the shaders are compiled; the first frame then sets data-scene="ready",
@@ -245,6 +264,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
       rings.dispose();
       delete root.dataset.scene;
       delete root.dataset.sceneMode;
+      delete root.dataset.sceneMotion;
       delete root.dataset.bubbles;
     },
   };
