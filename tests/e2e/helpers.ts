@@ -1,8 +1,17 @@
 import { expect, type Page } from "@playwright/test";
+import { site } from "../../content/site";
+
+// Names the tests find things by. They come from the site's copy, so a text edit doesn't break the tests.
+export const text = {
+  flip: site.front.flip,
+  flipBack: site.back.flipLabel,
+  dots: site.back.dotsLabel,
+  labels: site.back.panels.map((p) => p.label),
+};
 
 // Turns the card with the front button and waits until the back is the visible face, at rest.
 export async function turnOver(page: Page) {
-  await page.getByRole("button", { name: "Who's behind this?" }).click();
+  await page.getByRole("button", { name: text.flip }).click();
   await moveAway(page);
   await expect(page.locator("#back")).not.toHaveAttribute("inert");
   await expectAngle(page, 180);
@@ -13,11 +22,17 @@ export async function moveAway(page: Page) {
   await page.mouse.move(1, 1);
 }
 
-export async function cardAngle(page: Page) {
+// The card's turn (rotateY) and hover tilt (rotateX), in degrees, as last drawn.
+export async function cardTransform(page: Page) {
   return page.locator("#card").evaluate((el) => {
-    const m = /rotateY\((-?[\d.]+)deg\)/.exec((el as HTMLElement).style.transform);
-    return m ? Number(m[1]) : 0;
+    const t = (el as HTMLElement).style.transform;
+    const read = (axis: string) => Number(new RegExp(`rotate${axis}\\((-?[\\d.]+)deg\\)`).exec(t)?.[1] ?? 0);
+    return { angle: read("Y"), tilt: read("X") };
   });
+}
+
+export async function cardAngle(page: Page) {
+  return (await cardTransform(page)).angle;
 }
 
 // Waits until the card has stopped at `angle`. The spring overshoots, so passing through it is not enough:
@@ -51,3 +66,13 @@ export async function panelAtTop(page: Page) {
     return panels.findLastIndex((p) => p.offsetTop <= box.scrollTop + 2);
   });
 }
+
+// Loads `url` with ?debug and waits for the panel it shows once the page has picked its tier. Until then the tier
+// is undecided, so checking for "no scene" any earlier would pass for the wrong reason.
+export async function loadWithTier(page: Page, url: string, tier: "high" | "medium" | "low") {
+  await page.goto(url + (url.includes("?") ? "&debug" : "?debug"));
+  await expect(page.locator(".debug")).toHaveText(new RegExp(`^${tier}\\b`), { timeout: 15_000 });
+}
+
+// three.js marks the window when it loads, so without the mark the 3D chunk was never downloaded.
+export const threeLoaded = (page: Page) => page.evaluate(() => "__THREE__" in window);

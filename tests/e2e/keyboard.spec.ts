@@ -1,62 +1,61 @@
-import { test, expect } from "@playwright/test";
-import { panelAtTop } from "./helpers";
+import { test, expect, type Page } from "@playwright/test";
+import { site } from "../../content/site";
+import { panelAtTop, text, turnOver } from "./helpers";
 
 test.use({ reducedMotion: "reduce" });
+
+const dot = (page: Page, index: number) => page.getByRole("list", { name: text.dots }).getByRole("button", { name: text.labels[index] });
 
 test("tab order, flip with Enter, keys move one panel, Escape returns", async ({ page }) => {
   await page.goto("/?quality=low");
 
-  for (const [role, name] of [
-    ["link", "Telegram (opens in a new tab)"],
-    ["link", "X (opens in a new tab)"],
-    ["link", "GitHub (opens in a new tab)"],
-    ["button", "Who's behind this?"],
-  ] as const) {
+  for (const link of site.contact.links) {
     await page.keyboard.press("Tab");
-    await expect(page.getByRole(role, { name, exact: true })).toBeFocused();
+    await expect(page.getByRole("link", { name: link.label + site.contact.newTab, exact: true })).toBeFocused();
   }
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("button", { name: text.flip, exact: true })).toBeFocused();
 
   await page.keyboard.press("Enter");
   const panels = page.locator("#panels");
   await expect(panels).toBeFocused();
-  await expect(panels).toHaveAccessibleName("Building, story and offline");
+  await expect(panels).toHaveAccessibleName(site.back.panelsLabel);
   await expect(page.locator("#front")).toHaveAttribute("inert");
 
-  const dot = (name: string) => page.getByRole("list", { name: "Sections" }).getByRole("button", { name });
-  for (const [key, index, name] of [
-    ["PageDown", 1, "Story"],
-    ["ArrowDown", 2, "Offline"],
-    ["ArrowUp", 1, "Story"],
-    ["ArrowLeft", 0, "Building"],
-    ["ArrowRight", 1, "Story"],
-    ["Home", 0, "Building"],
-    ["End", 2, "Offline"],
-    ["PageUp", 1, "Story"],
-    [" ", 2, "Offline"],
-    ["Shift+ ", 1, "Story"],
+  for (const [key, index] of [
+    ["PageDown", 1],
+    ["ArrowDown", 2],
+    ["ArrowUp", 1],
+    ["ArrowLeft", 0],
+    ["ArrowRight", 1],
+    ["Home", 0],
+    ["End", 2],
+    ["PageUp", 1],
+    [" ", 2],
+    ["Shift+ ", 1],
   ] as const) {
     await page.keyboard.press(key);
     expect(await panelAtTop(page), key).toBe(index);
-    await expect(dot(name), key).toHaveAttribute("aria-current", "true");
+    await expect(dot(page, index), key).toHaveAttribute("aria-current", "true");
   }
 
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("button", { name: "Who's behind this?" })).toBeFocused();
+  await expect(page.getByRole("button", { name: text.flip })).toBeFocused();
   await expect(page.locator("#back")).toHaveAttribute("inert");
 });
 
 test("Space on the Back button turns the card instead of scrolling", async ({ page }) => {
   await page.goto("/?quality=low");
-  await page.getByRole("button", { name: "Who's behind this?" }).click();
-  await page.getByRole("button", { name: "Back to the front" }).focus();
+  await page.getByRole("button", { name: text.flip }).click();
+  await page.getByRole("button", { name: text.flipBack }).focus();
   await page.keyboard.press(" ");
-  await expect(page.getByRole("button", { name: "Who's behind this?" })).toBeFocused();
+  await expect(page.getByRole("button", { name: text.flip })).toBeFocused();
 });
 
 test("a dot jumps to its panel", async ({ page }) => {
   await page.goto("/?quality=low");
-  await page.getByRole("button", { name: "Who's behind this?" }).click();
-  await page.getByRole("list", { name: "Sections" }).getByRole("button", { name: "Offline" }).click();
+  await page.getByRole("button", { name: text.flip }).click();
+  await dot(page, 2).click();
   expect(await panelAtTop(page)).toBe(2);
 });
 
@@ -65,7 +64,7 @@ for (const [width, height] of [[320, 568], [568, 320], [390, 844]] as const) {
   test(`PageDown never skips a panel at ${width}x${height}`, async ({ page }) => {
     await page.setViewportSize({ width, height });
     await page.goto("/?quality=low");
-    await page.getByRole("button", { name: "Who's behind this?" }).click();
+    await page.getByRole("button", { name: text.flip }).click();
     const seen = [await panelAtTop(page)];
     for (let i = 0; i < 12; i++) {
       await page.keyboard.press("PageDown");
@@ -76,3 +75,21 @@ for (const [width, height] of [[320, 568], [568, 320], [390, 844]] as const) {
     expect(new Set(seen)).toEqual(new Set([0, 1, 2]));
   });
 }
+
+test.describe("with motion", () => {
+  test.use({ reducedMotion: "no-preference" });
+
+  // While a smooth scroll runs, the box is still near the panel it left; the second key has to count from the
+  // panel it is heading to, or two quick presses move one panel.
+  test("two quick presses move two panels, each way", async ({ page }) => {
+    await page.goto("/?quality=low");
+    await turnOver(page);
+    await expect(page.locator("#panels")).toBeFocused();
+    await page.keyboard.press("PageDown");
+    await page.keyboard.press("PageDown");
+    expect(await panelAtTop(page)).toBe(2);
+    await page.keyboard.press("ArrowUp");
+    await page.keyboard.press("ArrowUp");
+    expect(await panelAtTop(page)).toBe(0);
+  });
+});

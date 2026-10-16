@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { site } from "../../content/site";
 
 test("home renders from the server without errors", async ({ page }) => {
   const errors: string[] = [];
@@ -10,7 +11,7 @@ test("home renders from the server without errors", async ({ page }) => {
 
   const response = await page.goto("/?quality=low");
   expect(response?.status()).toBe(200);
-  await expect(page).toHaveTitle("elitelephant");
+  await expect(page).toHaveTitle(site.meta.title);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
   const axe = await new AxeBuilder({ page }).analyze();

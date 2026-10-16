@@ -1,4 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
+import { site } from "../../content/site";
+import { CARDS } from "../fixtures/cards";
+import { text } from "./helpers";
 
 // From the smallest phone to 1440p, including short landscape phones.
 const SIZES = [
@@ -33,21 +36,30 @@ for (const [width, height] of SIZES) {
       for (const b of await boxes(page, selector)) inside(b, card, selector);
     }
 
-    await page.getByRole("button", { name: "Who's behind this?" }).click();
+    await page.getByRole("button", { name: text.flip }).click();
     const [dots] = await boxes(page, "#back .dots");
     const [backButton] = await boxes(page, '[data-flip="back"]');
     inside(dots, card, "dots");
     inside(backButton, card, "back button");
 
     // Every panel, scrolled into place: its text stays inside the card and clear of the dots.
-    for (const name of ["Building", "Story", "Offline"]) {
-      await page.getByRole("list", { name: "Sections" }).getByRole("button", { name }).click();
-      const id = name.toLowerCase();
-      await expect(page.getByRole("heading", { level: 2, name })).toBeInViewport();
+    for (const { id, label } of site.back.panels) {
+      await page.getByRole("list", { name: text.dots }).getByRole("button", { name: label }).click();
+      await expect(page.getByRole("heading", { level: 2, name: label })).toBeInViewport();
       for (const b of await boxes(page, `#${id} > *`)) {
         expect(b.left, `${id} left`).toBeGreaterThanOrEqual(card.left);
         expect(b.right, `${id} clear of the dots`).toBeLessThanOrEqual(dots.left);
       }
     }
+  });
+}
+
+// The scene's unit tests lay the bubbles out around these rectangles; they must be where the CSS puts the card.
+for (const [name, { view, card }] of Object.entries(CARDS)) {
+  test(`the card sits where the scene's tests expect it, ${name} (${view.width}x${view.height})`, async ({ page }) => {
+    await page.setViewportSize(view);
+    await page.goto("/?quality=low");
+    const rect = await page.locator("#card").evaluate((el: HTMLElement) => ({ x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight }));
+    expect(rect).toEqual(card);
   });
 }
