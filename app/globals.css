@@ -1,4 +1,4 @@
-/* From the approved mockup (exploracion/alta/index.html), same class names. Page in mint, card dark (D-0231). */
+/* Mint page with halftone rings behind a dark card. */
 :root {
   --bg: #8cfeb8; --card: #0b100e; --mint: #8cfeb8; --text: #f4fff8; --muted: rgba(244,255,248,.64);
   --faint: rgba(244,255,248,.55); --line: rgba(140,254,184,.16); --radius: 22px;

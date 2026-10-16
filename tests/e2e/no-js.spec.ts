@@ -26,7 +26,7 @@ test("without JavaScript the headline and every link work", async ({ page }) => 
   await expect(page.locator('a[href^="mailto:"]')).toHaveCount(0);
 });
 
-// D-0230: without JavaScript only the front shows, and the flip button, which would do nothing, is hidden.
+// Without JavaScript only the front shows, and the flip button, which would do nothing, is hidden.
 test("without JavaScript the back stays hidden and there is no flip button", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator('[data-flip="front"]')).toBeHidden();

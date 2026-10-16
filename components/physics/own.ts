@@ -1,6 +1,5 @@
-// Hand-written sphere physics, ported from the mockup (exploracion/alta/engine-own.js): fixed 120 Hz step,
-// springs toward targets, mass-weighted collisions. Two additions: spheres on the same spot part in a
-// seeded random direction, and settle() runs the simulation offline (reduced motion, rebuilds).
+// Hand-written sphere physics: fixed 120 Hz step, springs toward targets, mass-weighted collisions. Spheres on the
+// same spot part in a seeded random direction, and settle() runs the simulation offline (reduced motion, rebuilds).
 import { Vector3 } from "three";
 import { seeded } from "../../lib/random.ts";
 import type { Body, Engine } from "./engine.ts";

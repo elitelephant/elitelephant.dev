@@ -12,7 +12,7 @@ type Props = { tier: LiveTier; lock: boolean; onDrop: (next: LiveTier | "low") =
 const COUNT: Record<LiveTier, number> = { high: 64, medium: 44 };
 const MAX_DPR: Record<LiveTier, number> = { high: 2, medium: 1.5 };
 
-// Behind the card. No glass, bloom or environment (D-0231): just the light pass and the ring pass.
+// Behind the card, in two passes: the bubbles' light, then the rings.
 // With reduced motion nothing moves, so it renders only when something changes.
 export default function Scene({ tier, lock, onDrop }: Props) {
   const [reduce] = useState(() => matchMedia("(prefers-reduced-motion: reduce)").matches);

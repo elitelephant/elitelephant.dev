@@ -7,7 +7,8 @@ import { useSpringFlip } from "./useSpringFlip";
 type Props = { label: string; backLabel: string; front: ReactNode; back: ReactNode };
 
 // The hidden face is inert and aria-hidden, so it gets no focus and screen readers skip it.
-// Without JavaScript only the front shows (D-0230): the back is rendered inert and the flip button is hidden.
+// Without JavaScript the card can't turn, so only the front shows: the back is rendered inert (its text stays in
+// the HTML) and the flip button is hidden.
 export function FlipCard({ label, backLabel, front, back }: Props) {
   const cardRef = useRef<HTMLElement>(null);
   const flipped = useStore((s) => s.flipped);

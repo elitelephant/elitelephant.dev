@@ -33,7 +33,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={GeistSans.variable}>
       <head>
-        {/* Without JavaScript only the front shows (D-0230), so the flip button would do nothing. */}
+        {/* Without JavaScript the card can't turn, so only the front shows and the flip button is hidden. */}
         <noscript>
           <style>{".front .flip{display:none}"}</style>
         </noscript>

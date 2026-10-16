@@ -1,4 +1,4 @@
-// The share image (D-0234): the dark card with the headline broken by phrase, and a mint halftone bubble on the
+// The share image: the dark card with the headline broken by phrase, and a mint halftone bubble on the
 // right with the scene's light. The text sits inside the center square, which is all WhatsApp's compact preview shows.
 // Rendered by next/og (Satori): flexbox and inline styles only.
 import { readFile } from "node:fs/promises";

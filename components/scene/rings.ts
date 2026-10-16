@@ -1,5 +1,5 @@
 // The halftone look: the bubbles' light goes into a small target (2× the cell grid), then one full-screen
-// pass draws a ring per 6 px cell. Mint page, dark ink (D-0231).
+// pass draws a ring per 6 px cell. Mint page, dark ink.
 import * as THREE from "three";
 import { quadVert, ringFrag } from "./shaders";
 

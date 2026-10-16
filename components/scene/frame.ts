@@ -1,4 +1,4 @@
-// Where each bubble goes. Front: it drifts around its home. Back (D-0232): it holds a seat around the card,
+// Where each bubble goes. Front: it drifts around its home. Back: it holds a seat around the card,
 // clear of its edge, watching it, and breathes.
 import type { Vector3 } from "three";
 import { CAM_Z, type Ball, type Layout } from "./layout.ts";

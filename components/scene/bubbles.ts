@@ -1,5 +1,5 @@
 // The bubbles, their physics and the pointer, outside React. Front: scattered, drifting, pushed by the cursor,
-// grabbed and thrown. Back: a loose crowd around the card that holds still and breathes (D-0232).
+// grabbed and thrown. Back: a loose crowd around the card that holds still and breathes.
 import * as THREE from "three";
 import { createOwnEngine } from "@/components/physics/own";
 import type { Engine } from "@/components/physics/engine";

@@ -1,5 +1,5 @@
-// From the mockup (exploracion/pruebas/mix/scene.js), trimmed to the mint palette. scripts/og-template.html
-// carries the same two shaders for the share image.
+// The scene's two shaders. scripts/rings-template.html runs the same two for the static fallback, and
+// lib/halftone.ts redoes them on the CPU for the share image: change the three together.
 
 // Each bubble's light, like a soap bubble: bright rim (fresnel), a highlight, a touch of diffuse, dimmer far away.
 export const lightVert = /* glsl */ `

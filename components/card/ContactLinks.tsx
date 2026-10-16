@@ -1,6 +1,7 @@
 import { site } from "@/content/site";
 
-// Telegram, X and GitHub open in a new tab and say so to screen readers; mailto: stays in the tab (D-0229).
+// Telegram, X and GitHub open in a new tab, so the card stays open, and say so to screen readers. mailto: gets no
+// target: it opens the mail app, and some browsers would leave an empty tab behind.
 export function ContactLinks() {
   const { contact } = site;
   return (

@@ -1,4 +1,4 @@
-// The card flip spring from the approved mockup (exploracion/alta/card.js): weight and a slight overshoot.
+// The card flip spring: the card turns with some weight and overshoots a little before it settles.
 export const K = 140; // stiffness
 export const C = 15; // damping; with K = 140 it overshoots a few degrees
 export const TILT = 3.5; // max hover tilt, in degrees

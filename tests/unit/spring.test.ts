@@ -31,7 +31,7 @@ for (const fps of [10, 30, 60, 120]) {
   });
 }
 
-test("the spring overshoots a little, like the mockup", () => {
+test("the spring overshoots a little", () => {
   const { peak } = flip(0, 180, 60);
   assert.ok(peak > 180 && peak < 195, `peak ${peak.toFixed(1)}°`);
 });

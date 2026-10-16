@@ -40,7 +40,7 @@ export type Ball = {
   depth: number; // back: 0 near the card and forward, 1 far and deep
 };
 
-// The mockup's bubbles: scattered over the whole view, small ones more often. Their seats around the card
+// The bubbles: scattered over the whole view, small ones more often. Their seats around the card
 // come in shuffled order (sizes mix), each nudged along the edge; bigger ones lean a bit further back.
 export function makeBalls(layout: Layout, count: number): Ball[] {
   const r0 = seeded(7);

@@ -1,5 +1,5 @@
 // Every text on the site lives here; components never hard-code copy.
-// Plain Node runs this file too (scripts/og.ts), so it uses only erasable TypeScript syntax.
+// Plain Node runs this file too (the unit tests), so it uses only erasable TypeScript syntax.
 
 export type ContactLink =
   | { kind: "external"; label: string; href: string }
