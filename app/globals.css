@@ -1,9 +1,18 @@
 /* Mint page with halftone rings behind a dark card. */
+/* Text is sized in rem and the root size is left alone, so the reader's own text size (browser or system) applies.
+   Spacing, borders and outlines stay in px. */
 :root {
   --bg: #8cfeb8; --card: #0b100e; --mint: #8cfeb8; --text: #f4fff8; --muted: rgba(244,255,248,.64);
   --faint: rgba(244,255,248,.55); --line: rgba(140,254,184,.16); --radius: 22px;
   --pad-x: 44px; --pad-y: 40px;
   --font: var(--font-geist-sans), system-ui, sans-serif;
+  /* The smallest area a pointer can hit reliably: 24 px with a mouse, 44 px with a finger. Links and dots get theirs
+     without changing how they look, and never from the text size. */
+  --hit: 24px;
+  --dot-x: 35px; /* from the card's right edge to the centre of the dots */
+}
+@media (pointer: coarse) {
+  :root { --hit: 44px; }
 }
 * { box-sizing: border-box; margin: 0; }
 html, body { height: 100%; }
@@ -20,37 +29,47 @@ a:hover { text-decoration: underline; }
 html[data-scene="ready"] .scene { opacity: 1; }
 .scene canvas { touch-action: none; cursor: grab; }
 .scene canvas.grabbing { cursor: grabbing; }
-.debug { position: fixed; left: 12px; bottom: 12px; z-index: 10; margin: 0; max-width: none; font: 12px ui-monospace, monospace;
+.debug { position: fixed; left: 12px; bottom: 12px; z-index: 10; margin: 0; max-width: none; font: .75rem ui-monospace, monospace;
   color: var(--mint); background: rgba(0,0,0,.7); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
 
-.stage { position: fixed; inset: 0; display: grid; place-items: center; perspective: 1800px; padding: 16px; pointer-events: none; }
-.card { position: relative; width: min(780px, 100%); height: 456px; transform-style: preserve-3d; pointer-events: auto; will-change: transform; }
+.stage { position: fixed; inset: 0; display: grid; place-items: center; perspective: 1800px; pointer-events: none;
+  padding: 16px max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+/* A card taller than the screen (high zoom, very large text) scrolls rather than lose its bottom. Only then: mid-turn,
+   the card's perspective can reach past a short screen and would flash a scrollbar. FlipCard sets data-tall. */
+html[data-tall] .stage, .stage:has(> .notfound) { overflow-y: auto; }
+/* At least this tall, and taller if its front needs it, so no text is ever cut off. The back takes the same height. */
+.card { position: relative; display: grid; width: min(780px, 100%); min-height: 456px; transform-style: preserve-3d; pointer-events: auto; will-change: transform; }
 .face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
   border-radius: var(--radius); background: var(--card); border: 1px solid var(--line);
   box-shadow: 0 30px 80px -30px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.02) inset; }
 
-.front { transform: rotateY(0deg); padding: var(--pad-y) var(--pad-x); display: grid; grid-template-rows: auto 1fr auto; }
-.hi { color: var(--muted); font-size: 16px; letter-spacing: .005em; }
-h1 { align-self: center; font-size: 48px; font-weight: 600; line-height: 1.04; letter-spacing: -.025em; text-wrap: balance; }
+.front { position: relative; transform: rotateY(0deg); padding: var(--pad-y) var(--pad-x); display: grid; grid-template-rows: auto 1fr auto; }
+.hi { color: var(--muted); font-size: 1rem; letter-spacing: .005em; }
+h1 { align-self: center; font-size: 3rem; font-weight: 600; line-height: 1.04; letter-spacing: -.025em; text-wrap: balance; }
 h1 .now { display: block; color: var(--mint); margin-top: .12em; }
 .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-.links { display: flex; flex-wrap: wrap; gap: 8px 22px; list-style: none; padding: 0; font-size: 15px; }
+.links { display: flex; flex-wrap: wrap; gap: 8px 22px; list-style: none; padding: 0; font-size: .9375rem; }
 .links .ext { color: var(--faint); }
+/* The hit area grows around the link, centred, without moving the text. */
+.links a { position: relative; }
+.links a::before { content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, var(--hit)); height: max(100%, var(--hit)); transform: translate(-50%, -50%); }
 
-.flip { display: inline-flex; align-items: center; gap: 8px; background: transparent; color: var(--mint);
-  border: 1px solid rgba(140,254,184,.42); border-radius: 999px; padding: 10px 18px; font: 500 14px var(--font); cursor: pointer;
+.flip { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; background: transparent; color: var(--mint);
+  border: 1px solid rgba(140,254,184,.42); border-radius: 999px; padding: 10px 18px; font: 500 .875rem var(--font); cursor: pointer;
   transition: background .2s, border-color .2s; }
 .flip:hover { background: rgba(140,254,184,.08); border-color: rgba(140,254,184,.7); }
-.flip svg { width: 15px; height: 15px; }
+.flip svg { width: 1.0715em; height: 1.0715em; }
 
 .back { transform: rotateY(180deg); overflow: hidden; }
 /* Only the face looking at you shows; useSpringFlip switches data-side edge-on. WebKit ignores backface-visibility,
    so the other face is hidden outright. Opacity rather than visibility, so focus can land on the back as it turns. */
 .card:not([data-side="back"]) .back, .card[data-side="back"] .front { opacity: 0; }
-/* The panels scroll in the space above the Back button, so a long panel never runs under it. */
-.panels { position: absolute; inset: 0 0 76px; overflow-y: auto; scroll-snap-type: y mandatory; overscroll-behavior: contain; scrollbar-width: none; }
+/* The panels scroll in the space above the Back button, so a long panel never runs under it. The button grows with
+   the reader's text size (22 px of padding and border plus its line), and so does the space kept for it. */
+.panels { position: absolute; inset: 0 0 max(76px, calc(54px + 1.15rem)); overflow-y: auto; scroll-snap-type: y mandatory; overscroll-behavior: contain; scrollbar-width: none; }
 .panels::-webkit-scrollbar { display: none; }
-.panel { min-height: 100%; scroll-snap-align: start; scroll-snap-stop: always; padding: var(--pad-y) calc(var(--pad-x) + 40px) 0 var(--pad-x);
+/* The bottom padding keeps the focus ring of the last link inside the box. */
+.panel { min-height: 100%; scroll-snap-align: start; scroll-snap-stop: always; padding: var(--panel-top, var(--pad-y)) calc(var(--pad-x) + 40px) 6px var(--pad-x);
   display: flex; flex-direction: column; justify-content: safe center; }
 .card[data-ready] .panel > * { opacity: 0; transform: translateY(10px); transition: opacity .5s, transform .5s; }
 .card[data-ready] .panel.in > * { opacity: 1; transform: none; }
@@ -58,18 +77,34 @@ h1 .now { display: block; color: var(--mint); margin-top: .12em; }
 .panel.in > *:nth-child(3) { transition-delay: .12s; }
 .panel.in > *:nth-child(4) { transition-delay: .18s; }
 .panel.in > *:nth-child(5) { transition-delay: .24s; }
-/* --fit, set on the panels (1 or less), shrinks the back's text until the longest panel fits without scrolling. */
-.label { font-size: calc(12px * var(--fit, 1)); font-weight: 500; color: var(--mint); letter-spacing: .12em; margin-bottom: calc(18px * var(--fit, 1)); text-transform: uppercase; }
+/* --fit, set on the panels (1 or less), shrinks the back's text until the longest panel fits without scrolling.
+   Labels stop at 11 px, the smallest size Apple allows. */
+.label { font-size: max(.6875rem, calc(.75rem * var(--fit, 1))); font-weight: 500; color: var(--mint); letter-spacing: .12em; margin-bottom: calc(18px * var(--fit, 1)); text-transform: uppercase; }
 .label span { color: var(--faint); margin-right: 10px; }
-.panel h3 { font-size: calc(24px * var(--fit, 1)); font-weight: 500; letter-spacing: -.01em; margin-bottom: calc(12px * var(--fit, 1)); }
-p { color: var(--muted); line-height: 1.62; font-size: 16px; margin-bottom: 12px; max-width: 60ch; }
-.panel p { font-size: calc(16px * var(--fit, 1)); margin-bottom: calc(12px * var(--fit, 1)); }
-.panel .say { font-size: calc(28px * var(--fit, 1)); font-weight: 600; color: var(--text); margin: calc(24px * var(--fit, 1)) 0 calc(14px * var(--fit, 1)); letter-spacing: -.015em; }
-.story p { font-size: calc(15px * var(--fit, 1)); line-height: 1.55; margin-bottom: calc(10px * var(--fit, 1)); }
-.panel .links { font-size: calc(15px * var(--fit, 1)); }
+.panel h3 { font-size: calc(1.5rem * var(--fit, 1)); font-weight: 500; letter-spacing: -.01em; margin-bottom: calc(12px * var(--fit, 1)); }
+p { color: var(--muted); line-height: 1.62; font-size: 1rem; margin-bottom: 12px; max-width: 60ch; }
+.panel p { font-size: calc(1rem * var(--fit, 1)); margin-bottom: calc(12px * var(--fit, 1)); }
+.panel .say { font-size: calc(1.75rem * var(--fit, 1)); font-weight: 600; color: var(--text); margin: calc(24px * var(--fit, 1)) 0 calc(14px * var(--fit, 1)); letter-spacing: -.015em; }
+.story p { font-size: calc(.9375rem * var(--fit, 1)); line-height: 1.55; margin-bottom: calc(10px * var(--fit, 1)); }
+.panel .links { font-size: calc(.9375rem * var(--fit, 1)); }
+/* Before the text shrinks, the spacing tightens (data-tight). */
+.panels[data-tight] { --panel-top: 22px; }
+.panels[data-tight] .panel p { line-height: 1.45; margin-bottom: calc(8px * var(--fit, 1)); }
+.panels[data-tight] .label { margin-bottom: calc(9px * var(--fit, 1)); }
+.panels[data-tight] .panel h3 { margin-bottom: calc(6px * var(--fit, 1)); }
+.panels[data-tight] .panel .say { margin: calc(12px * var(--fit, 1)) 0 calc(8px * var(--fit, 1)); }
+/* A panel that still doesn't fit (text the reader enlarged, the smallest screens) reads to its end: the snapping goes
+   soft, and the bottom edge fades while more of the panel is below it. */
+.panels[data-overflow] { scroll-snap-type: y proximity; }
+.panels[data-overflow] .panel { scroll-snap-stop: normal; }
+.panels[data-more] { mask-image: linear-gradient(to bottom, #000 calc(100% - 44px), transparent); }
 
-.dots { position: absolute; right: 22px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; list-style: none; padding: 0; }
-.dots button { width: 26px; height: 26px; border-radius: 50%; border: 0; background: transparent; cursor: pointer; display: grid; place-items: center; }
+/* Each dot's button is the hit area, centred on the 6 px dot; with a finger they touch, so the dots sit 44 px apart. */
+.dots { --dot: max(26px, var(--hit)); position: absolute; right: calc(var(--dot-x) - var(--dot) / 2); top: 50%; transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: max(0px, calc(36px - var(--dot))); list-style: none; padding: 0; }
+/* Square, so the corners of the hit area count too; only the focus ring is round. */
+.dots button { width: var(--dot); height: var(--dot); border: 0; background: transparent; cursor: pointer; display: grid; place-items: center; }
+.dots button:focus-visible { border-radius: 50%; }
 .dots button::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--faint); transition: background .2s, transform .2s; }
 .dots button[aria-current="true"]::before { background: var(--mint); transform: scale(1.4); }
 .back .flip { position: absolute; right: 22px; bottom: 22px; background: var(--card); }
@@ -77,23 +112,23 @@ p { color: var(--muted); line-height: 1.62; font-size: 16px; margin-bottom: 12px
 
 .notfound { position: relative; inset: auto; place-self: center; width: min(460px, 100%); padding: var(--pad-y) var(--pad-x);
   display: grid; gap: 14px; pointer-events: auto; }
-.notfound h1 { font-size: 40px; }
+.notfound h1 { font-size: 2.5rem; }
 
 @media (max-width: 760px) {
-  :root { --pad-x: 24px; --pad-y: 28px; --radius: 20px; }
-  .stage { padding: 16px 16px max(16px, env(safe-area-inset-bottom)); }
-  /* Narrower and shorter than the screen, in the middle of it, so the bubbles show above and below the card. */
-  .card { width: min(86vw, 400px); height: min(max(64vh, 440px), calc(100vh - 32px), 560px); height: min(max(64dvh, 440px), calc(100dvh - 32px), 560px); }
-  h1 { font-size: clamp(30px, 10.4vw, 44px); }
+  /* --dot-x of 22 px puts a finger-sized dot button flush with the card's edge, inside it. */
+  :root { --pad-x: 24px; --pad-y: 28px; --radius: 20px; --dot-x: 22px; }
+  /* Narrower and shorter than the screen, in the middle of it, so the bubbles show above and below the card. svh, the
+     height with the browser's bars showing, so the card doesn't jump when they hide. */
+  .card { width: min(86vw, 400px); min-height: min(max(64vh, 440px), calc(100vh - 32px), 560px); min-height: min(max(64svh, 440px), calc(100svh - 32px), 560px); }
+  h1 { font-size: clamp(1.875rem, .5rem + 8.4vw, 2.75rem); }
   .front .row { flex-direction: column; align-items: flex-start; gap: 20px; }
   /* Each panel starts at the top, so the label sits in the same place on all three; a short one ends early. */
-  .panel { padding: var(--pad-y) calc(var(--pad-x) + 22px) 0 var(--pad-x); justify-content: flex-start; }
+  .panel { padding-right: calc(var(--pad-x) + 22px); justify-content: flex-start; }
   /* Tighter lines and gaps, so the text can stay larger in the smaller card. */
   .panel p, .story p { line-height: 1.5; margin-bottom: calc(10px * var(--fit, 1)); }
   .label { margin-bottom: calc(12px * var(--fit, 1)); }
-  .panel h3 { font-size: calc(21px * var(--fit, 1)); margin-bottom: calc(8px * var(--fit, 1)); }
-  .panel .say { font-size: calc(24px * var(--fit, 1)); margin: calc(16px * var(--fit, 1)) 0 calc(10px * var(--fit, 1)); }
-  .dots { right: 8px; }
+  .panel h3 { font-size: calc(1.3125rem * var(--fit, 1)); margin-bottom: calc(8px * var(--fit, 1)); }
+  .panel .say { font-size: calc(1.5rem * var(--fit, 1)); margin: calc(16px * var(--fit, 1)) 0 calc(10px * var(--fit, 1)); }
 }
 @media (max-width: 760px) and (orientation: portrait) {
   body { background: var(--bg) url(/fallback/rings-tall.webp) center / cover no-repeat; }
@@ -101,14 +136,13 @@ p { color: var(--muted); line-height: 1.62; font-size: 16px; margin-bottom: 12px
 /* Short landscape phones: let the card use the full height. */
 @media (max-height: 520px) and (min-width: 560px) {
   .stage { place-items: center; }
-  .card { height: calc(100vh - 32px); height: calc(100dvh - 32px); width: min(640px, 68vw); }
-  h1 { font-size: 32px; }
+  .card { min-height: calc(100vh - 32px); min-height: calc(100svh - 32px); width: min(640px, 68vw); }
+  h1 { font-size: 2rem; }
   :root { --pad-y: 22px; }
 }
-/* On short screens a panel can be taller than the card: snap softly so it can be read to the end. */
-@media (max-height: 620px) {
-  .panels { scroll-snap-type: y proximity; }
-  .panel { scroll-snap-stop: normal; }
+/* The smallest of them, an old iPhone sideways: a smaller headline, so the front fits without scrolling. */
+@media (max-height: 340px) and (min-width: 560px) {
+  h1 { font-size: 1.75rem; }
 }
 @media (prefers-reduced-motion: reduce) {
   .card[data-ready] .panel > * { transition: none; opacity: 1; transform: none; }

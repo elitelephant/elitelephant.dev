@@ -74,5 +74,13 @@ export async function loadWithTier(page: Page, url: string, tier: "high" | "medi
   await expect(page.locator(".debug")).toHaveText(new RegExp(`^${tier}\\b`), { timeout: 15_000 });
 }
 
+// Sets the browser's default text size, as a reader does in the settings (and Chrome on Android does from the
+// system's, given the text-scale meta tag). Chromium only; call it before loading the page.
+export async function setTextSize(page: Page, px: number) {
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Page.enable");
+  await cdp.send("Page.setFontSizes", { fontSizes: { standard: px, fixed: 13 } });
+}
+
 // three.js marks the window when it loads, so without the mark the 3D chunk was never downloaded.
 export const threeLoaded = (page: Page) => page.evaluate(() => "__THREE__" in window);

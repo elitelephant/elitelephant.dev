@@ -1,0 +1,58 @@
+import { test, expect, type Page } from "@playwright/test";
+import { panelAtTop, text } from "./helpers";
+
+// A finger needs about 44×44 px to hit what it aims at (Apple, WCAG 2.5.5); a mouse 24×24 (WCAG 2.5.8). Links and dots
+// get that area around them without changing how they look, and never from the text size; buttons are drawn 44 tall.
+test.use({ reducedMotion: "reduce" });
+
+// The targets matching `selector` whose area is smaller than size×size: some point within size/2 of the centre lands
+// on something else (a neighbour, or nothing).
+async function tooSmall(page: Page, selector: string, size: number) {
+  return page.evaluate(([selector, size]) => {
+    const reach = size / 2 - 1;
+    return [...document.querySelectorAll<HTMLElement>(selector)].filter((el) => {
+      const r = el.getBoundingClientRect();
+      const [cx, cy] = [r.left + r.width / 2, r.top + r.height / 2];
+      return [[0, 0], [-reach, 0], [reach, 0], [0, -reach], [0, reach], [-reach, -reach], [reach, reach], [-reach, reach], [reach, -reach]]
+        .some(([dx, dy]) => {
+          const hit = document.elementFromPoint(cx + dx, cy + dy);
+          return !hit || (hit !== el && !el.contains(hit));
+        });
+    }).map((el) => el.textContent || el.getAttribute("aria-label"));
+  }, [selector, size] as const);
+}
+
+async function checkTargets(page: Page, size: number) {
+  await page.goto("/?quality=low");
+  await page.evaluate(() => document.fonts.ready);
+  expect(await tooSmall(page, "#front .links a", size), "front links").toEqual([]);
+  expect(await tooSmall(page, '[data-flip="front"]', 44), "flip button").toEqual([]);
+
+  await page.getByRole("button", { name: text.flip }).click();
+  await expect(page.locator("#back")).not.toHaveAttribute("inert");
+  expect(await tooSmall(page, ".dots button", size), "dots").toEqual([]);
+  expect(await tooSmall(page, '[data-flip="back"]', 44), "Back button").toEqual([]);
+
+  await page.getByRole("list", { name: text.dots }).getByRole("button", { name: text.labels[2] }).click();
+  expect(await panelAtTop(page)).toBe(2);
+  expect(await tooSmall(page, "#offline .links a", size), "Offline links").toEqual([]);
+}
+
+test.describe("with a finger", () => {
+  test.use({ hasTouch: true, isMobile: true });
+  for (const [width, height] of [[390, 844], [375, 667], [320, 568], [844, 390], [568, 320], [768, 1024]] as const) {
+    test(`every target is 44 px or more at ${width}x${height}`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      await checkTargets(page, 44);
+    });
+  }
+});
+
+test.describe("with a mouse", () => {
+  for (const [width, height] of [[1280, 800], [1024, 768]] as const) {
+    test(`every target is 24 px or more at ${width}x${height}`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      await checkTargets(page, 24);
+    });
+  }
+});

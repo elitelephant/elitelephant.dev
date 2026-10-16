@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { site } from "../../content/site";
-import { panelAtTop, text, turnOver } from "./helpers";
+import { panelAtTop, setTextSize, text, turnOver } from "./helpers";
 
 test.use({ reducedMotion: "reduce" });
 
@@ -59,10 +59,12 @@ test("a dot jumps to its panel", async ({ page }) => {
   expect(await panelAtTop(page)).toBe(2);
 });
 
-// On short screens a panel can be taller than the box: PageDown reads it to the end, then moves on, never skipping one.
-for (const [width, height] of [[320, 568], [568, 320], [390, 844]] as const) {
-  test(`PageDown never skips a panel at ${width}x${height}`, async ({ page }) => {
+// With text the reader enlarged, a panel can be taller than the box: PageDown reads it to the end, then moves on,
+// never skipping one.
+for (const [width, height, px] of [[320, 568, 16], [568, 320, 16], [390, 844, 16], [390, 844, 32], [568, 320, 21]] as const) {
+  test(`PageDown never skips a panel at ${width}x${height} with ${px} px text`, async ({ page }) => {
     await page.setViewportSize({ width, height });
+    await setTextSize(page, px);
     await page.goto("/?quality=low");
     await page.getByRole("button", { name: text.flip }).click();
     const seen = [await panelAtTop(page)];

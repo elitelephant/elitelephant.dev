@@ -11,8 +11,11 @@ const FIT_MIN = 0.78; // about 12.5 px for body text: below that, a panel scroll
 // A phone turned sideways leaves a box under 260 px tall; there the text may go down to about 10.3 px to fit.
 const SHORT_BOX = 260;
 const FIT_MIN_SHORT = 0.64;
+const DEFAULT_TEXT = 16; // px, the root size when the reader hasn't changed their text size
 
-// Sets --fit on the box: the largest text scale, 1 at most, at which every panel fits without scrolling.
+// Makes every panel fit its box without scrolling: first the spacing tightens (data-tight), then the text shrinks
+// (--fit, the largest scale up to 1 that fits). Text the reader enlarged, in the browser or the system, keeps its size.
+// Whatever still doesn't fit is marked data-overflow, and reads by scrolling.
 function fitText(box: HTMLElement) {
   const panels = [...box.querySelectorAll<HTMLElement>(".panel")];
   const fits = (fit: number) => {
@@ -27,15 +30,31 @@ function fitText(box: HTMLElement) {
       return end - first.offsetTop <= room + 0.5;
     });
   };
-  if (fits(1)) return;
-  let lo = box.clientHeight < SHORT_BOX ? FIT_MIN_SHORT : FIT_MIN;
-  let hi = 1;
-  for (let i = 0; i < 7; i++) {
-    const mid = (lo + hi) / 2;
-    if (fits(mid)) lo = mid;
-    else hi = mid;
+  box.removeAttribute("data-tight");
+  let fit = 1;
+  if (!fits(1)) {
+    box.setAttribute("data-tight", "");
+    const enlarged = parseFloat(getComputedStyle(document.documentElement).fontSize) > DEFAULT_TEXT;
+    if (!fits(1) && !enlarged) {
+      let lo = box.clientHeight < SHORT_BOX ? FIT_MIN_SHORT : FIT_MIN;
+      let hi = 1;
+      for (let i = 0; i < 7; i++) {
+        const mid = (lo + hi) / 2;
+        if (fits(mid)) lo = mid;
+        else hi = mid;
+      }
+      fit = Math.floor(lo * 1000) / 1000;
+    }
   }
-  box.style.setProperty("--fit", lo.toFixed(3));
+  box.toggleAttribute("data-overflow", !fits(fit));
+}
+
+// data-more while the panel at the bottom edge of the box goes on below it, so the edge fades as a hint to scroll.
+function markMore(box: HTMLElement) {
+  const bottom = box.scrollTop + box.clientHeight;
+  const more = box.hasAttribute("data-overflow") && [...box.querySelectorAll<HTMLElement>(".panel")]
+    .some((p) => p.offsetTop < bottom - 1 && p.offsetTop + p.offsetHeight > bottom + 1);
+  box.toggleAttribute("data-more", more);
 }
 
 // The back's panels: one per section, snapping, with a dot per panel and keys that move one panel at a time.
@@ -59,12 +78,20 @@ export function Panels({ label, dotsLabel, sections, children }: Props) {
   useLayoutEffect(() => {
     const box = boxRef.current;
     if (!box) return;
-    const fit = () => fitText(box);
+    const fit = () => {
+      fitText(box);
+      markMore(box);
+    };
+    const more = () => markMore(box);
     fit();
     const observer = new ResizeObserver(fit);
     observer.observe(box);
     document.fonts?.ready.then(fit);
-    return () => observer.disconnect();
+    box.addEventListener("scroll", more, { passive: true });
+    return () => {
+      observer.disconnect();
+      box.removeEventListener("scroll", more);
+    };
   }, []);
 
   // The active dot and the fade-in follow the panel that crosses the middle of the box, so tall panels count too.

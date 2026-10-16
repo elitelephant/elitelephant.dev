@@ -64,17 +64,45 @@ for (const [name, { view, card }] of Object.entries(CARDS)) {
   });
 }
 
-// The back's text shrinks to fit its card (down to about 12.5 px, or 10.3 px on a phone turned sideways), so no panel
-// needs scrolling.
+// With the reader's settings untouched, nothing scrolls: not the page, not a panel. The back's spacing tightens and
+// then its text shrinks to fit the card (down to about 12.5 px, or 10.3 px on a phone turned sideways); labels stop
+// at 11 px.
 for (const [width, height] of SIZES) {
-  test(`every panel reads without scrolling at ${width}x${height}`, async ({ page }) => {
+  test(`nothing scrolls at ${width}x${height}`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await page.goto("/?quality=low");
+    await page.evaluate(() => document.fonts.ready);
+    // The card fits the stage, so the page has nothing to scroll.
+    const overStage = await page.evaluate(() => {
+      const stage = document.querySelector<HTMLElement>(".stage")!;
+      const style = getComputedStyle(stage);
+      const room = stage.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+      return document.getElementById("card")!.offsetHeight - room;
+    });
+    expect(overStage).toBeLessThanOrEqual(0.5);
+    await page.getByRole("button", { name: text.flip }).click();
+    await expect(page.locator("#back")).not.toHaveAttribute("inert");
+    const panels = page.locator("#panels");
+    const extra = await panels.evaluate((box) =>
+      [...box.querySelectorAll<HTMLElement>(".panel")].map((panel) => `${panel.id} ${panel.offsetHeight - box.clientHeight}`));
+    expect(extra).toEqual(site.back.panels.map(({ id }) => `${id} 0`));
+    await expect(panels).not.toHaveAttribute("data-overflow");
+    const label = await page.locator("#back .label").first().evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+    expect(label).toBeGreaterThanOrEqual(11);
+  });
+}
+
+// On the common large phones, tablets and desktops the back's text keeps its full size: the spacing gives way first.
+for (const [width, height] of [[390, 844], [414, 896], [430, 932], [768, 1024], [1280, 800]] as const) {
+  test(`the back's text keeps its size at ${width}x${height}`, async ({ page }) => {
     await page.setViewportSize({ width, height });
     await page.goto("/?quality=low");
     await page.getByRole("button", { name: text.flip }).click();
-    await expect(page.locator("#back")).not.toHaveAttribute("inert");
     await page.evaluate(() => document.fonts.ready);
-    const extra = await page.locator("#panels").evaluate((box) =>
-      [...box.querySelectorAll<HTMLElement>(".panel")].map((panel) => `${panel.id} ${panel.offsetHeight - box.clientHeight}`));
-    expect(extra).toEqual(site.back.panels.map(({ id }) => `${id} 0`));
+    const sizes = await page.evaluate(() => [
+      getComputedStyle(document.documentElement).fontSize,
+      getComputedStyle(document.querySelector("#back .panel:not(.story) p")!).fontSize,
+    ]);
+    expect(sizes[1]).toBe(sizes[0]);
   });
 }
