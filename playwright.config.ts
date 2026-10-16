@@ -23,6 +23,8 @@ export default defineConfig({
         launchOptions: { args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] },
       },
     },
+    // Safari's engine on an iPhone, for what WebKit renders its own way: the card's faces.
+    { name: "webkit", testMatch: /faces\.spec\.ts/, use: { ...devices["iPhone 13"] } },
   ],
   webServer: {
     command: `npm run start -- -p ${PORT}`,

@@ -44,9 +44,13 @@ h1 .now { display: block; color: var(--mint); margin-top: .12em; }
 .flip svg { width: 15px; height: 15px; }
 
 .back { transform: rotateY(180deg); overflow: hidden; }
-.panels { position: absolute; inset: 0; overflow-y: auto; scroll-snap-type: y mandatory; overscroll-behavior: contain; scrollbar-width: none; }
+/* Only the face looking at you shows; useSpringFlip switches data-side edge-on. WebKit ignores backface-visibility,
+   so the other face is hidden outright. Opacity rather than visibility, so focus can land on the back as it turns. */
+.card:not([data-side="back"]) .back, .card[data-side="back"] .front { opacity: 0; }
+/* The panels scroll in the space above the Back button, so a long panel never runs under it. */
+.panels { position: absolute; inset: 0 0 76px; overflow-y: auto; scroll-snap-type: y mandatory; overscroll-behavior: contain; scrollbar-width: none; }
 .panels::-webkit-scrollbar { display: none; }
-.panel { min-height: 100%; scroll-snap-align: start; scroll-snap-stop: always; padding: var(--pad-y) calc(var(--pad-x) + 40px) 76px var(--pad-x);
+.panel { min-height: 100%; scroll-snap-align: start; scroll-snap-stop: always; padding: var(--pad-y) calc(var(--pad-x) + 40px) 0 var(--pad-x);
   display: flex; flex-direction: column; justify-content: safe center; }
 .card[data-ready] .panel > * { opacity: 0; transform: translateY(10px); transition: opacity .5s, transform .5s; }
 .card[data-ready] .panel.in > * { opacity: 1; transform: none; }
@@ -66,7 +70,7 @@ p { color: var(--muted); line-height: 1.62; font-size: 16px; margin-bottom: 12px
 .dots button::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--faint); transition: background .2s, transform .2s; }
 .dots button[aria-current="true"]::before { background: var(--mint); transform: scale(1.4); }
 .back .flip { position: absolute; right: 22px; bottom: 22px; background: var(--card); }
-.panels:focus-visible { outline-offset: -4px; border-radius: var(--radius); }
+.panels:focus-visible { outline-offset: -4px; border-radius: var(--radius) var(--radius) 0 0; }
 
 .notfound { position: relative; inset: auto; place-self: center; width: min(460px, 100%); padding: var(--pad-y) var(--pad-x);
   display: grid; gap: 14px; pointer-events: auto; }
@@ -78,8 +82,7 @@ p { color: var(--muted); line-height: 1.62; font-size: 16px; margin-bottom: 12px
   .card { height: min(74vh, 640px); height: min(74dvh, 640px); }
   h1 { font-size: clamp(30px, 9vw, 38px); }
   .front .row { flex-direction: column; align-items: flex-start; gap: 20px; }
-  .back { background: rgba(11,16,14,.82); }
-  .panel { padding: var(--pad-y) calc(var(--pad-x) + 22px) 76px var(--pad-x); }
+  .panel { padding: var(--pad-y) calc(var(--pad-x) + 22px) 0 var(--pad-x); }
   .story p { font-size: 15px; line-height: 1.55; }
   .dots { right: 8px; }
   .panel h3 { font-size: 21px; }

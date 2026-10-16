@@ -15,9 +15,18 @@ function createFlip(card: HTMLElement) {
   let raf = 0;
   let last = 0;
   let crossed = true;
+  let side = "front";
 
   const render = () => {
-    card.style.transform = `rotateX(${tilt.x.toFixed(2)}deg) rotateY(${(spring.angle + tilt.y).toFixed(2)}deg)`;
+    const angle = spring.angle + tilt.y;
+    card.style.transform = `rotateX(${tilt.x.toFixed(2)}deg) rotateY(${angle.toFixed(2)}deg)`;
+    // The face turned away is hidden outright (globals.css): WebKit ignores backface-visibility and would show it
+    // mirrored through the other face. The switch happens edge-on, where neither face can be seen.
+    const facing = Math.abs(angle - 180) < 90 ? "back" : "front";
+    if (facing !== side) {
+      side = facing;
+      card.dataset.side = side;
+    }
   };
 
   const tick = (now: number) => {

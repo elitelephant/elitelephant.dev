@@ -10,7 +10,7 @@ Node 24 (`.nvmrc`).
 
 ```sh
 npm ci
-npx playwright install chromium
+npx playwright install chromium webkit
 npm run dev
 ```
 
