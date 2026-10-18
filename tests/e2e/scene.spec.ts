@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 import { expectAngle, loadWithTier, moveAway, text, threeLoaded } from "./helpers";
 
 // One WebGL page at a time: on SwiftShader the CPU draws every frame, and parallel pages starve each other. The
@@ -350,6 +351,15 @@ test("a hidden tab stops the scene drawing until it shows again", async ({ page 
   await setHidden(page, false);
   await expect.poll(reports, { timeout: 20_000 }).toBeGreaterThan(hidden);
   await expect(html(page)).toHaveAttribute("data-scene", "ready");
+});
+
+// The canvas is decoration (aria-hidden): with the scene drawing, axe finds what it finds without it, nothing.
+test("axe finds nothing with the scene on, front and back", async ({ page }) => {
+  const violations = async () => (await new AxeBuilder({ page }).analyze()).violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(", ")}`);
+  await sceneReady(page, "/?quality=medium&lock");
+  expect(await violations()).toEqual([]);
+  await turnOver(page);
+  expect(await violations()).toEqual([]);
 });
 
 test.describe("with reduced motion", () => {
