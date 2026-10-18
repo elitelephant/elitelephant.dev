@@ -2,11 +2,9 @@
 
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
-import { createQualityMonitor, type LiveTier, type Step } from "@/lib/quality-monitor";
+import { FPS_EVENT, createQualityMonitor, type LiveTier, type Step } from "@/lib/quality-monitor";
 
 type Props = { tier: LiveTier; canRise: boolean; reduce: boolean; lock: boolean; onStep: (step: Step) => void };
-
-export const FPS_EVENT = "scene-fps";
 
 // For tests (data-fps) and the ?debug panel.
 function reportFps(fps: number) {

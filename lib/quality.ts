@@ -2,6 +2,12 @@
 // From there the frame rate decides (lib/quality-monitor.ts): the scene steps down when it can't keep up, and up to the
 // ceiling when it has room.
 import type { Quality } from "./params.ts";
+import type { LiveTier } from "./quality-monitor.ts";
+
+// What each tier draws: how many bubbles, and at most how many device pixels per CSS pixel. Here rather than in the
+// 3D chunk, so the ?debug panel reads the same numbers without loading it.
+export const BUBBLES: Record<LiveTier, number> = { high: 64, medium: 44 };
+export const MAX_DPR: Record<LiveTier, number> = { high: 2, medium: 1.5 };
 
 export type Probe = {
   webgl2: boolean;

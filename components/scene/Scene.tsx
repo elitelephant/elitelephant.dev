@@ -2,15 +2,13 @@
 
 import { Canvas } from "@react-three/fiber";
 import { useState } from "react";
+import { BUBBLES, MAX_DPR } from "@/lib/quality";
 import type { LiveTier, Step } from "@/lib/quality-monitor";
 import { CAM_Z, FOV } from "./layout";
 import { Upkeep } from "./Upkeep";
 import { World } from "./World";
 
 type Props = { tier: LiveTier; canRise: boolean; lock: boolean; onStep: (step: Step) => void };
-
-const COUNT: Record<LiveTier, number> = { high: 64, medium: 44 };
-const MAX_DPR: Record<LiveTier, number> = { high: 2, medium: 1.5 };
 
 // Behind the card, in two passes: the bubbles' light, then the rings.
 // With reduced motion nothing moves, so it renders only when something changes.
@@ -28,7 +26,7 @@ export default function Scene({ tier, canRise, lock, onStep }: Props) {
       camera={{ fov: FOV, position: [0, 0, CAM_Z], near: 0.1, far: 100 }}
       frameloop={reduce ? "demand" : "always"}
     >
-      <World count={COUNT[tier]} reduce={reduce} />
+      <World count={BUBBLES[tier]} reduce={reduce} />
       <Upkeep tier={tier} canRise={canRise} reduce={reduce} lock={lock} onStep={onStep} />
     </Canvas>
   );

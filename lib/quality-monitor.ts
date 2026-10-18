@@ -4,6 +4,9 @@ export type LiveTier = "high" | "medium";
 // `held`: the scene goes because the browser held frames back, so it may come back once (createRecoveryWatch).
 export type Step = { from: LiveTier; to: LiveTier | "low"; held: boolean };
 
+// The window event each finished window's rate is reported under, for the ?debug panel.
+export const FPS_EVENT = "scene-fps";
+
 export const WARMUP_MS = 2000;
 export const WINDOW_MS = 2000;
 // high → medium under 45 fps; medium → static rings under 25, not 30: iPhones in Low Power Mode run at 30.

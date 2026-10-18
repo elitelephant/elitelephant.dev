@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-const FPS_EVENT = "scene-fps"; // dispatched by Upkeep, which lives in the 3D chunk
+import type { Quality } from "@/lib/params";
+import { MAX_DPR } from "@/lib/quality";
+import { FPS_EVENT } from "@/lib/quality-monitor";
 
 // ?debug: the quality tier, the number of bubbles and the frame rate, to measure real devices.
-export function DebugPanel({ tier }: { tier: string }) {
+export function DebugPanel({ tier }: { tier: Quality }) {
   const [fps, setFps] = useState<number | null>(null);
   const [bubbles, setBubbles] = useState<string | null>(null);
 
@@ -18,7 +19,9 @@ export function DebugPanel({ tier }: { tier: string }) {
     return () => removeEventListener(FPS_EVENT, onFps);
   }, []);
 
-  const parts = [tier, bubbles && `${bubbles} bubbles`, fps !== null && `${fps.toFixed(0)} fps`, `dpr ${Math.min(devicePixelRatio, tier === "high" ? 2 : 1.5)}`];
+  // The scene's pixel ratio, clamped the way the canvas clamps it; at low there is no scene to have one.
+  const dpr = tier !== "low" && `dpr ${Math.min(Math.max(1, devicePixelRatio), MAX_DPR[tier])}`;
+  const parts = [tier, bubbles && `${bubbles} bubbles`, fps !== null && `${fps.toFixed(0)} fps`, dpr];
   return (
     <p className="debug" aria-hidden="true">
       {parts.filter(Boolean).join(" · ")}
