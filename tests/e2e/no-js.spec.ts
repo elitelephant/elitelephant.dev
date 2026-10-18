@@ -71,3 +71,21 @@ test("share image and icons are served", async ({ request }) => {
     expect(response.headers()["content-type"], url).toContain(type);
   }
 });
+
+// A PNG states its size in its header: width and height, 4 bytes each, from byte 16.
+const pngSize = (png: Buffer) => [png.readUInt32BE(16), png.readUInt32BE(20)];
+
+// The size apps expect for a link preview (1200×630) and for an iPhone home-screen icon (180×180), and a share image
+// light enough for the apps to fetch: 300 KB at most.
+test("share images and icons have their real size and weight", async ({ request }) => {
+  for (const [url, width, height, maxBytes] of [
+    ["/opengraph-image", 1200, 630, 300_000],
+    ["/twitter-image", 1200, 630, 300_000],
+    ["/icon.png", 32, 32, 10_000],
+    ["/apple-icon.png", 180, 180, 20_000],
+  ] as const) {
+    const body = await (await request.get(url)).body();
+    expect(pngSize(body), url).toEqual([width, height]);
+    expect(body.length, `${url} bytes`).toBeLessThanOrEqual(maxBytes);
+  }
+});
