@@ -137,9 +137,11 @@ p { color: var(--muted); line-height: 1.62; font-size: 1rem; margin-bottom: 12px
   h1 { font-size: 2rem; }
   :root { --pad-y: 22px; }
 }
-/* The smallest of them, an old iPhone sideways: a smaller headline, so the front fits without scrolling. */
+/* The smallest of them, an old iPhone sideways: a smaller headline and, once the back's spacing tightens, less room
+   above its panels, so neither face scrolls. */
 @media (max-height: 340px) and (min-width: 560px) {
   h1 { font-size: 1.75rem; }
+  .panels[data-tight] { --panel-top: 10px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .card[data-ready] .panel > * { transition: none; opacity: 1; transform: none; }
