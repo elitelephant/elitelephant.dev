@@ -3,10 +3,14 @@ import { site } from "../../content/site";
 import { CARDS } from "../fixtures/cards";
 import { text } from "./helpers";
 
-// From the smallest phone to 1440p, including short landscape phones.
+// The most used screens (StatCounter, September 2026), then the edges: the smallest phone, an old iPhone on its side,
+// a small desktop and the desktop the scene's tests use.
 const SIZES = [
-  [320, 568], [390, 844], [568, 320], [667, 375], [844, 390],
-  [768, 1024], [1024, 768], [1280, 800], [1920, 1080], [2560, 1440],
+  [360, 800], [375, 667], [384, 832], [390, 844], [393, 852], [414, 896], [430, 932],
+  [667, 375], [844, 390], [896, 414],
+  [768, 1024], [820, 1180],
+  [1366, 768], [1536, 864], [1920, 1080], [2560, 1440],
+  [320, 568], [568, 320], [1024, 768], [1280, 800],
 ] as const;
 
 test.use({ reducedMotion: "reduce" });
@@ -104,5 +108,22 @@ for (const [width, height] of [[390, 844], [414, 896], [430, 932], [768, 1024], 
       getComputedStyle(document.querySelector("#back .panel:not(.story) p")!).fontSize,
     ]);
     expect(sizes[1]).toBe(sizes[0]);
+  });
+}
+
+// The 404 shows whole on every screen, and its link home can be reached.
+for (const [width, height] of SIZES) {
+  test(`the 404 fits at ${width}x${height}`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    const response = await page.goto("/no-such-page");
+    expect(response?.status()).toBe(404);
+    await page.evaluate(() => document.fonts.ready);
+    const [card] = await boxes(page, ".notfound");
+    inside(card, { top: 0, left: 0, right: width, bottom: height }, "404 card");
+    for (const selector of [".notfound .hi", ".notfound h1", ".notfound a"]) {
+      for (const b of await boxes(page, selector)) inside(b, card, selector);
+    }
+    await page.getByRole("link", { name: site.notFound.link }).click();
+    await expect(page).toHaveURL("/");
   });
 }
