@@ -72,3 +72,30 @@ test.describe("with motion", () => {
     await expect(page.locator("#building > p").first()).toHaveCSS("opacity", "1");
   });
 });
+
+// A finger has no hover: touching the card doesn't tilt it, and a tap on the button turns it with the spring.
+test.describe("on a touch screen", () => {
+  test.use({ reducedMotion: "no-preference", hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
+
+  test("a touch doesn't tilt the card, and a tap on the button turns it", async ({ page }) => {
+    await page.goto("/?quality=low");
+    const card = (await page.locator("#card").boundingBox())!;
+    const at = (fx: number, fy: number) => ({ x: card.x + card.width * fx, y: card.y + card.height * fy });
+    // A finger dragged across the card, as touch events (Playwright's tap alone moves no pointer).
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [at(0.1, 0.1)] });
+    for (let i = 1; i <= 8; i++) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [at(0.1 + i * 0.1, 0.1 + i * 0.05)] });
+    await nextFrames(page);
+    expect(await cardTransform(page)).toEqual({ angle: 0, tilt: 0 });
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    await page.touchscreen.tap(at(0.9, 0.3).x, at(0.9, 0.3).y);
+    await nextFrames(page);
+    expect(await cardTransform(page)).toEqual({ angle: 0, tilt: 0 });
+    await page.getByRole("button", { name: text.flip }).tap();
+    await expect.poll(() => cardAngle(page)).toBeGreaterThan(0);
+    await expectAngle(page, 180);
+    expect((await cardTransform(page)).tilt).toBe(0);
+    await page.getByRole("button", { name: text.flipBack }).tap();
+    await expectAngle(page, 0);
+  });
+});
