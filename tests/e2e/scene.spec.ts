@@ -157,6 +157,26 @@ test("?scene=0 leaves only the static rings, without downloading the 3D code", a
   expect(await threeLoaded(page)).toBe(false);
 });
 
+// The scene's renderer gets no WebGL context although the device check got one (a lost GPU, a crashed driver): the
+// scene goes, the page counts as low, and the card still turns.
+test("if the scene breaks, the page drops to low and the card still turns", async ({ page }) => {
+  await page.addInitScript(() => {
+    // The device check asks for two WebGL2 contexts; every one after those fails, the renderer's included.
+    const real = HTMLCanvasElement.prototype.getContext;
+    let allowed = 2;
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, type: string, ...rest: unknown[]) {
+      if (type === "webgl2" && allowed-- <= 0) return null;
+      return (real as (type: string, ...rest: unknown[]) => RenderingContext | null).call(this, type, ...rest);
+    } as typeof real;
+  });
+  await page.goto("/?quality=medium&lock&debug");
+  await expect(page.locator(".debug")).toHaveText(/^low\b/, { timeout: 20_000 });
+  await expect(html(page)).toHaveAttribute("data-tier", "low");
+  await expect(page.locator(".scene")).toHaveCount(0);
+  await page.getByRole("button", { name: text.flip }).click();
+  await expect(page.locator("#back")).not.toHaveAttribute("inert");
+});
+
 test("low quality keeps the static rings, without downloading the 3D code", async ({ page }) => {
   await loadWithTier(page, "/?quality=low", "low");
   await expect(page.locator(".scene")).toHaveCount(0);

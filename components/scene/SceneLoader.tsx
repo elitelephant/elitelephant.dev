@@ -13,13 +13,14 @@ const Scene = dynamic(() => import("./Scene"), { ssr: false });
 const FADE_OUT_MS = 700; // matches the .scene opacity transition in app/globals.css
 
 // If the scene breaks, it goes away and the static rings stay.
-class Boundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+class Boundary extends Component<{ children: ReactNode; onFail: () => void }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() {
     return { failed: true };
   }
   componentDidCatch(error: unknown) {
     console.warn("3D scene failed, keeping the static rings.", error);
+    this.props.onFail();
   }
   render() {
     return this.state.failed ? null : this.props.children;
@@ -84,6 +85,13 @@ export function SceneLoader() {
     }
   }, []);
 
+  // A broken scene is gone for good: the page is at low, like a device with no scene at all.
+  const onFail = useCallback(() => {
+    markTier("low");
+    setOptions((o) => ({ ...o, tier: "low" }));
+    setLive(null);
+  }, []);
+
   // While the static rings show, watch the page's own frame rate; once it is normal, bring the scene back.
   useEffect(() => {
     if (!comeback) return;
@@ -111,7 +119,7 @@ export function SceneLoader() {
   return (
     <>
       {live && (
-        <Boundary>
+        <Boundary onFail={onFail}>
           <Scene
             tier={live}
             canRise={options.ceiling === "high" && highOpen}
