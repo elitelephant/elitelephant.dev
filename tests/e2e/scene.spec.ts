@@ -362,6 +362,74 @@ test("axe finds nothing with the scene on, front and back", async ({ page }) => 
   expect(await violations()).toEqual([]);
 });
 
+// Ink (non-mint pixels) per 40 px cell of the screen, outside the card: where the bubbles are.
+async function inkCells(page: Page) {
+  const card = (await page.locator("#card").boundingBox())!;
+  const png = (await page.screenshot()).toString("base64");
+  return page.evaluate(async ([png, card]) => {
+    const bitmap = await createImageBitmap(await (await fetch(`data:image/png;base64,${png}`)).blob());
+    const context = new OffscreenCanvas(bitmap.width, bitmap.height).getContext("2d")!;
+    context.drawImage(bitmap, 0, 0);
+    const data = context.getImageData(0, 0, bitmap.width, bitmap.height).data;
+    const cells: { x: number; y: number; ink: number }[] = [];
+    const size = 40;
+    for (let cy = 0; cy + size <= bitmap.height; cy += size) {
+      for (let cx = 0; cx + size <= bitmap.width; cx += size) {
+        const x = cx + size / 2, y = cy + size / 2;
+        if (x > card.x - size && x < card.x + card.width + size && y > card.y - size && y < card.y + card.height + size) continue;
+        let ink = 0;
+        for (let py = cy; py < cy + size; py++) {
+          for (let px = cx; px < cx + size; px++) {
+            const i = (py * bitmap.width + px) * 4;
+            if (Math.abs(data[i] - 0x8c) + Math.abs(data[i + 1] - 0xfe) + Math.abs(data[i + 2] - 0xb8) > 60) ink++;
+          }
+        }
+        cells.push({ x, y, ink: ink / (size * size) });
+      }
+    }
+    return cells;
+  }, [png, card] as const);
+}
+
+const inkAt = async (page: Page, x: number, y: number) =>
+  (await inkCells(page)).find((c) => Math.abs(c.x - x) < 20 && Math.abs(c.y - y) < 20)?.ink ?? 0;
+
+// A bubble can be grabbed, dragged to an empty spot and thrown; let go, it doesn't stay there but finds its way back
+// among the others. Judged by what the canvas shows: the page's static rings are hidden, so the ink is the bubbles'.
+// A bubble's light reaches past its edge, so the inkiest spots are tried in turn until one holds a bubble.
+test("a bubble can be grabbed, dragged and thrown, and goes back to its place", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await sceneReady(page, "/?quality=medium&lock");
+  await page.evaluate(() => void (document.body.style.background = "#8cfeb8"));
+  await expect(html(page)).toHaveAttribute("data-scene-motion", "still", { timeout: SLOW });
+  const cells = await inkCells(page);
+  const canvas = page.locator(".scene canvas");
+  let bubble: (typeof cells)[number] | undefined;
+  for (const spot of cells.filter((c) => c.ink > 0.1).sort((a, b) => b.ink - a.ink).slice(0, 8)) {
+    await page.mouse.move(spot.x, spot.y);
+    await page.mouse.down();
+    if (await canvas.evaluate((el) => el.classList.contains("grabbing"))) {
+      bubble = spot;
+      break;
+    }
+    await page.mouse.up();
+  }
+  expect(bubble, "a bubble under the pointer").toBeDefined();
+  const from = bubble!;
+  const empty = cells.filter((c) => c.ink === 0 && Math.hypot(c.x - from.x, c.y - from.y) > 200)
+    .reduce((a, b) => (Math.hypot(b.x - from.x, b.y - from.y) < Math.hypot(a.x - from.x, a.y - from.y) ? b : a));
+
+  await page.mouse.move(empty.x, empty.y, { steps: 12 });
+  await expect.poll(() => inkAt(page, empty.x, empty.y), { timeout: SLOW, message: "the bubble follows" }).toBeGreaterThan(0.05);
+  // A quick last move, so it leaves with some speed.
+  await page.mouse.move(empty.x + (empty.x - from.x) * 0.2, empty.y + (empty.y - from.y) * 0.2, { steps: 2 });
+  await page.mouse.up();
+  await expect(canvas).not.toHaveClass(/grabbing/);
+  await page.mouse.move(1, 1);
+  await expect.poll(() => inkAt(page, empty.x, empty.y), { timeout: SLOW, message: "gone from where it was let go" }).toBeLessThan(0.01);
+});
+
 test.describe("with reduced motion", () => {
   test.use({ reducedMotion: "reduce" });
 
