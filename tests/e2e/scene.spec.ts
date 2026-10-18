@@ -222,6 +222,16 @@ test.describe("on a touch screen", () => {
     expect((await log()).tiers).toEqual(["low", "medium"]);
   });
 
+  // On a phone a tap is the whole interaction: a tap on the card, not only on the bubbles, brings the motion back.
+  test("a tap on the card wakes the settled motion", async ({ page }) => {
+    test.setTimeout(120_000);
+    await sceneReady(page, "/?quality=medium&lock");
+    await expect(html(page)).toHaveAttribute("data-scene-motion", "still", { timeout: SLOW });
+    const card = (await page.locator("#card").boundingBox())!;
+    await page.touchscreen.tap(card.x + card.width / 2, card.y + card.height / 3);
+    await expect(html(page)).toHaveAttribute("data-scene-motion", "moving");
+  });
+
   // A browser that holds frames back (a window behind others, a busy machine) looks like a very slow device. The scene
   // goes, and comes back by itself once the page runs freely; if it happens again, the static rings stay.
   test("after held frames the scene comes back once, and the second time it stays away", async ({ page }) => {

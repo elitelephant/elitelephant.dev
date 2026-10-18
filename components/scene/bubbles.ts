@@ -167,6 +167,8 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
   };
   addEventListener("pointermove", onMove, { passive: true });
   addEventListener("pointerout", onOut);
+  // A touch anywhere counts, not only on the bubbles: on a phone a tap is often the only move there is.
+  addEventListener("pointerdown", wake);
   canvas.addEventListener("pointerdown", onDown);
   canvas.addEventListener("pointerup", onUp);
   canvas.addEventListener("pointercancel", onUp);
@@ -257,6 +259,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
       unkick();
       removeEventListener("pointermove", onMove);
       removeEventListener("pointerout", onOut);
+      removeEventListener("pointerdown", wake);
       canvas.removeEventListener("pointerdown", onDown);
       canvas.removeEventListener("pointerup", onUp);
       canvas.removeEventListener("pointercancel", onUp);
