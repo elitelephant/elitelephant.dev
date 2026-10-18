@@ -59,7 +59,7 @@ function createWindows(warmup: number, onFps: (fps: number) => void) {
   };
 }
 
-// `canRise`: whether the tier above is open to this device (see SceneLoader).
+// `canRise`: whether high is open to this device (see SceneLoader); only medium steps up.
 export function createQualityMonitor(tier: LiveTier, onFps: (fps: number) => void = () => {}, canRise = false) {
   const windows = createWindows(WARMUP_MS, onFps);
   let slow = 0;

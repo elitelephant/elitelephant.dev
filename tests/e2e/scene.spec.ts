@@ -267,10 +267,9 @@ test("?lock keeps the tier on a device too slow for it", async ({ page }) => {
   await expect(html(page)).toHaveAttribute("data-bubbles", "64");
 });
 
-// Motion that starts by itself stops within 5 s (WCAG 2.2.2): the front's drift and the frame's breathing settle a few
-// seconds after the last mouse move, touch or turn. The bubbles then come to rest, which on SwiftShader's few frames
-// per second takes several seconds more: two shots 1.2 s apart, until they barely differ. With the pointer resting in a
-// corner, bubbles at rest differ by under 0.3% of their pixels; a breathing frame, by about 6%.
+// After the drift and breathing settle (within 5 s, WCAG 2.2.2) the bubbles still come to rest, which on SwiftShader
+// takes seconds more, so shots 1.2 s apart are compared until they barely differ: under 0.3% of the pixels at rest
+// with the pointer in a corner, against about 6% while the frame breathes.
 async function comesToRest(page: Page) {
   await expect.poll(async () => {
     const a = await page.screenshot();

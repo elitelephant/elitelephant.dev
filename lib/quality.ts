@@ -17,15 +17,16 @@ export type Probe = {
 export type Plan = { start: Quality; ceiling: Quality };
 
 const SOFTWARE_GPU = /swiftshader|llvmpipe|softpipe|software|basic render/i;
-const NONE: Plan = { start: "low", ceiling: "low" };
+// No 3D at all: the static rings stay.
+export const NO_SCENE: Plan = { start: "low", ceiling: "low" };
 
 export function pickQuality(forced: Quality | null, probe: Probe): Plan {
   // Phones and tablets stop at medium, for their battery and heat, whatever their width or way up.
   const ceiling: Quality = probe.touch ? "medium" : "high";
   if (forced) return { start: forced, ceiling: forced === "high" ? "high" : ceiling };
-  if (!probe.webgl2 || !probe.capable) return NONE;
+  if (!probe.webgl2 || !probe.capable) return NO_SCENE;
   // A GPU emulated on the CPU can't hold the scene; it would only slow the page down.
-  if (probe.renderer && SOFTWARE_GPU.test(probe.renderer)) return NONE;
+  if (probe.renderer && SOFTWARE_GPU.test(probe.renderer)) return NO_SCENE;
   // Cores and memory only choose where to start: browsers report less than there is (Brave makes up new numbers for
   // each site and session), so a strong machine may start at medium and step up once it shows the frame rate.
   // Safari and Firefox don't report memory; unknown counts as enough.

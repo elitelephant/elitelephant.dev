@@ -47,7 +47,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
   let breathAmount = 0;
   let time = 0;
   // The drift and breathing run on their own clock, which slows to a stop when nothing happens (see pace).
-  let motion = 0;
+  let motionTime = 0;
   let activeAt = 0;
   let moving = true;
   const wake = () => {
@@ -85,7 +85,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
     engine = createOwnEngine(balls);
     // Rebuilt while the back shows (a resize): start in the seats, apart, instead of flying in from the front.
     if (mode === "gather") {
-      updateTargets(motion);
+      updateTargets(motionTime);
       engine.teleport(targets);
       engine.settle();
     }
@@ -204,13 +204,13 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
       }
     } else {
       const speed = pace(t - activeAt);
-      motion += dt * speed;
+      motionTime += dt * speed;
       // For tests: whether the drift and breathing have settled.
       if (moving !== speed > 0) {
         moving = speed > 0;
         root.dataset.sceneMotion = moving ? "moving" : "still";
       }
-      updateTargets(motion);
+      updateTargets(motionTime);
       engine.setTargets(targets);
       engine.setPointer(hover && grabbing < 0 ? scratch.copy(world) : null, 2.6 * Math.max(layout.scale, 0.6), 60);
       engine.step(dt);
@@ -219,7 +219,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
       const framed = mode === "gather";
       breathAmount += ((framed ? 1 : 0) - breathAmount) * Math.min(1, dt * 1.5);
       if (breathAmount > 0.001 || framed) {
-        for (let i = 0; i < meshes.length; i++) meshes[i].scale.setScalar(balls[i].r * (1 + breath(balls[i], motion, breathAmount) * BREATH_SCALE));
+        for (let i = 0; i < meshes.length; i++) meshes[i].scale.setScalar(balls[i].r * (1 + breath(balls[i], motionTime, breathAmount) * BREATH_SCALE));
       }
     }
     rings.render(scene, camera);

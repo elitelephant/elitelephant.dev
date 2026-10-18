@@ -4,13 +4,13 @@ import { CARDS } from "../fixtures/cards";
 import { panelAtTop, text } from "./helpers";
 
 // The most used screens (StatCounter, September 2026), then the edges: the smallest phone, an old iPhone on its side,
-// a small desktop and the desktop the scene's tests use.
+// a small desktop, the desktop the scene's tests use, and a 1280x720 and a 1280x800 laptop zoomed to 200%.
 const SIZES = [
   [360, 800], [375, 667], [384, 832], [390, 844], [393, 852], [414, 896], [430, 932],
   [667, 375], [844, 390], [896, 414],
   [768, 1024], [820, 1180],
   [1366, 768], [1536, 864], [1920, 1080], [2560, 1440],
-  [320, 568], [568, 320], [1024, 768], [1280, 800],
+  [320, 568], [568, 320], [1024, 768], [1280, 800], [640, 360], [640, 400],
 ] as const;
 
 test.use({ reducedMotion: "reduce" });

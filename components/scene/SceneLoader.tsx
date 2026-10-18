@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { Component, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { flipStore } from "@/lib/flip-store";
 import { readParams, type Quality } from "@/lib/params";
-import { pickQuality, probeDevice } from "@/lib/quality";
+import { NO_SCENE, pickQuality, probeDevice } from "@/lib/quality";
 import { createRecoveryWatch, type LiveTier, type Step } from "@/lib/quality-monitor";
 import { DebugPanel } from "./DebugPanel";
 
@@ -48,10 +48,10 @@ export function SceneLoader() {
     markTier("low");
     let cancel = () => {};
     const start = () => {
-      const { start, ceiling } = params.scene ? pickQuality(params.quality, probeDevice()) : { start: "low" as const, ceiling: "low" as const };
-      markTier(start);
-      setOptions({ lock: params.lock, debug: params.debug, tier: start, ceiling });
-      if (start !== "low") setLive(start);
+      const plan = params.scene ? pickQuality(params.quality, probeDevice()) : NO_SCENE;
+      markTier(plan.start);
+      setOptions({ lock: params.lock, debug: params.debug, tier: plan.start, ceiling: plan.ceiling });
+      if (plan.start !== "low") setLive(plan.start);
     };
     const whenIdle = () => {
       if (typeof window.requestIdleCallback === "function") {
@@ -70,10 +70,8 @@ export function SceneLoader() {
     };
   }, []);
 
-  // One rule for every step. Too slow for its tier: high steps down to medium; medium fades out and leaves the static
-  // rings, and that tier is closed for good. With room to spare, medium steps up to high, unless high was already too
-  // slow. If the scene went because the browser held frames back, the device isn't to blame: it comes back once when
-  // the browser runs normally again; a second drop keeps the static rings.
+  // One rule for every step: down for good when the device is too slow for its tier, up to high when it has room and
+  // high wasn't too slow, and back once after a drop for frames the browser held back, which aren't the device's fault.
   const onStep = useCallback(({ from, to, held }: Step) => {
     if (from === "high" && !held) setHighOpen(false);
     markTier(to);
@@ -117,7 +115,7 @@ export function SceneLoader() {
         <Boundary>
           <Scene
             tier={live}
-            canRise={live === "medium" && options.ceiling === "high" && highOpen}
+            canRise={options.ceiling === "high" && highOpen}
             lock={options.lock}
             onStep={onStep}
           />

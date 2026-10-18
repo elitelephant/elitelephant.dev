@@ -13,6 +13,11 @@ jobs:
   verify:
     # Pinned: ubuntu-latest moves to Ubuntu 26 on 19-10-2026, mid-launch.
     runs-on: ubuntu-24.04
+    # Inside Playwright's image, where the Linux screenshots in tests/e2e were made, so text renders exactly the same.
+    # Its browsers come installed; the tag follows @playwright/test in package.json.
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      options: --ipc=host
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
@@ -21,7 +26,6 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium webkit
       - run: npm run verify
       # The traces and error context of the failed tests, to open with `npx playwright show-trace`.
       - uses: actions/upload-artifact@v7

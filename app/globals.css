@@ -32,12 +32,10 @@ html[data-scene="ready"] .scene { opacity: 1; }
 .debug { position: fixed; left: 12px; bottom: 12px; z-index: 10; margin: 0; max-width: none; font: .75rem ui-monospace, monospace;
   color: var(--mint); background: rgba(0,0,0,.7); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
 
-/* safe center: a card taller than the stage starts at its top, which scrolling can reach, instead of overflowing
-   above it. Plain center first, for browsers without the keyword. */
+/* safe center keeps a card taller than the stage reachable from its top; plain center first, for older browsers. */
 .stage { position: fixed; inset: 0; display: grid; place-items: center; place-items: safe center; perspective: 1800px; pointer-events: none;
   padding: 16px max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
-/* A card taller than the screen (high zoom, very large text) scrolls rather than lose its bottom. Only then: mid-turn,
-   the card's perspective can reach past a short screen and would flash a scrollbar. FlipCard sets data-tall. */
+/* Scrolls only a card taller than the screen (FlipCard sets data-tall): mid-turn, the perspective would flash a scrollbar. */
 html[data-tall] .stage, .stage:has(> .notfound) { overflow-y: auto; }
 /* At least this tall, and taller if its front needs it, so no text is ever cut off. The back takes the same height. */
 .card { position: relative; display: grid; width: min(780px, 100%); min-height: 456px; transform-style: preserve-3d; pointer-events: auto; will-change: transform; }
@@ -66,8 +64,7 @@ h1 .now { display: block; color: var(--mint); margin-top: .12em; }
 /* Only the face looking at you shows; useSpringFlip switches data-side edge-on. WebKit ignores backface-visibility,
    so the other face is hidden outright. Opacity rather than visibility, so focus can land on the back as it turns. */
 .card:not([data-side="back"]) .back, .card[data-side="back"] .front { opacity: 0; }
-/* The panels scroll in the space above the Back button, so a long panel never runs under it. The button grows with
-   the reader's text size (22 px of padding and border plus its line), and so does the space kept for it. */
+/* The panels scroll above the Back button, in room that grows with it: 22 px of padding and border plus its line. */
 .panels { position: absolute; inset: 0 0 max(76px, calc(54px + 1.15rem)); overflow-y: auto; scroll-snap-type: y mandatory; overscroll-behavior: contain; scrollbar-width: none; }
 .panels::-webkit-scrollbar { display: none; }
 /* The bottom padding keeps the focus ring of the last link inside the box. */
@@ -95,8 +92,7 @@ p { color: var(--muted); line-height: 1.62; font-size: 1rem; margin-bottom: 12px
 .panels[data-tight] .label { margin-bottom: calc(9px * var(--fit, 1)); }
 .panels[data-tight] .panel h3 { margin-bottom: calc(6px * var(--fit, 1)); }
 .panels[data-tight] .panel .say { margin: calc(12px * var(--fit, 1)) 0 calc(8px * var(--fit, 1)); }
-/* A panel that still doesn't fit (text the reader enlarged, the smallest screens) reads to its end: the snapping goes
-   soft, and the bottom edge fades while more of the panel is below it. */
+/* A panel that still doesn't fit reads to its end: soft snapping, and a bottom edge that fades while more is below. */
 .panels[data-overflow] { scroll-snap-type: y proximity; }
 .panels[data-overflow] .panel { scroll-snap-stop: normal; }
 .panels[data-more] { mask-image: linear-gradient(to bottom, #000 calc(100% - 44px), transparent); }

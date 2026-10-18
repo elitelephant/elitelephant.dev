@@ -50,14 +50,14 @@ export type Ball = {
   depth: number; // back: 0 near the card and forward, 1 far and deep
 };
 
-// The bubbles: scattered over the whole view, small ones more often. Their seats around the card
-// come in shuffled order (sizes mix), each nudged along the edge; bigger ones lean a bit further back.
 // Whether a bubble at `p`, seen from the camera, overlaps the card.
 function behindCard(box: Box, p: Vector3, r: number) {
   const k = CAM_Z / (CAM_Z - p.z);
   return p.x * k > box.left - r && p.x * k < box.right + r && p.y * k < box.top + r && p.y * k > box.bottom - r;
 }
 
+// The bubbles: scattered over the whole view, small ones more often. Their seats around the card
+// come in shuffled order (sizes mix), each nudged along the edge; bigger ones lean a bit further back.
 export function makeBalls(layout: Layout, count: number): Ball[] {
   const r0 = seeded(7);
   const balls: Ball[] = [];

@@ -1,10 +1,9 @@
 import { test, expect } from "@playwright/test";
 import { text } from "./helpers";
 
-// What no other test measures: colours, spacing, the type itself. The card alone, without the scene, front and back,
-// on a phone, a tablet and a desktop. Windows and Linux draw text a little differently, so each keeps its own images
-// (Playwright names them by platform); the Linux ones are made in Playwright's Ubuntu image, the one CI runs on.
-// After a deliberate change to the card: npx playwright test visual --update-snapshots, on both.
+// Colours, spacing and type, which no other test measures: the card alone, front and back, against stored screenshots.
+// Windows and Linux draw text slightly differently, so each keeps its own; the Linux ones come from Playwright's Ubuntu
+// image, which CI runs in (after a deliberate change: npx playwright test visual --update-snapshots, on both).
 test.use({ reducedMotion: "reduce" });
 
 for (const [width, height] of [[390, 844], [768, 1024], [1280, 800]] as const) {
