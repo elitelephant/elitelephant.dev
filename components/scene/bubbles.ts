@@ -70,6 +70,8 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
 
   function build() {
     layout = computeLayout(view(), cardRect());
+    // For tests: how the frame sits around the card (a ring, or strips where the screen has room).
+    root.dataset.sceneShape = layout.shape;
     balls = makeBalls(layout, count);
     targets = balls.map((b) => b.home.clone());
     group.clear();
@@ -265,6 +267,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
       delete root.dataset.scene;
       delete root.dataset.sceneMode;
       delete root.dataset.sceneMotion;
+      delete root.dataset.sceneShape;
       delete root.dataset.bubbles;
     },
   };

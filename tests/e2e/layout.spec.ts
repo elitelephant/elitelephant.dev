@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { site } from "../../content/site";
 import { CARDS } from "../fixtures/cards";
-import { text } from "./helpers";
+import { panelAtTop, text } from "./helpers";
 
 // The most used screens (StatCounter, September 2026), then the edges: the smallest phone, an old iPhone on its side,
 // a small desktop and the desktop the scene's tests use.
@@ -127,3 +127,24 @@ for (const [width, height] of SIZES) {
     await expect(page).toHaveURL("/");
   });
 }
+
+// Turning a phone or resizing a window while reading the back: the same panel stays in view, its text fits the new
+// card again, and the dots and the Back button stay on the card.
+test("with the back showing, a resize keeps the panel and fits the text again", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/?quality=low");
+  await page.getByRole("button", { name: text.flip }).click();
+  await page.getByRole("list", { name: text.dots }).getByRole("button", { name: text.labels[2] }).click();
+  expect(await panelAtTop(page)).toBe(2);
+  for (const [width, height] of [[390, 844], [844, 390], [1280, 800]] as const) {
+    await page.setViewportSize({ width, height });
+    await expect(page.locator("#back")).not.toHaveAttribute("inert");
+    expect(await panelAtTop(page), `${width}x${height}`).toBe(2);
+    const dot = page.getByRole("list", { name: text.dots }).getByRole("button", { name: text.labels[2] });
+    await expect(dot).toHaveAttribute("aria-current", "true");
+    await expect.poll(() => page.locator("#panels").evaluate((box) =>
+      Math.max(...[...box.querySelectorAll<HTMLElement>(".panel")].map((p) => p.offsetHeight - box.clientHeight))), { message: `${width}x${height}` }).toBe(0);
+    const [card] = await boxes(page, "#card");
+    for (const selector of ["#back .dots", '[data-flip="back"]']) inside((await boxes(page, selector))[0], card, `${selector} at ${width}x${height}`);
+  }
+});

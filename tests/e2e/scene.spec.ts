@@ -298,6 +298,36 @@ test("the frame breathes when the back arrives, then holds still while you read"
   expect(await changedShare(page, c, d), "breathing").toBeGreaterThan(0.02);
 });
 
+// Share of a screenshot's pixels that are not the page's mint: the rings drawn there.
+async function inkShare(page: Page, png: Buffer) {
+  return page.evaluate(async (png) => {
+    const bitmap = await createImageBitmap(await (await fetch(`data:image/png;base64,${png}`)).blob());
+    const context = new OffscreenCanvas(bitmap.width, bitmap.height).getContext("2d")!;
+    context.drawImage(bitmap, 0, 0);
+    const data = context.getImageData(0, 0, bitmap.width, bitmap.height).data;
+    let ink = 0;
+    for (let i = 0; i < data.length; i += 4) if (Math.abs(data[i] - 0x8c) + Math.abs(data[i + 1] - 0xfe) + Math.abs(data[i + 2] - 0xb8) > 60) ink++;
+    return ink / (data.length / 4);
+  }, png.toString("base64"));
+}
+
+// Turning a window from desktop to phone while the back shows: the frame rebuilds around the new card, as strips above
+// and below it. The page's static rings are hidden, so any ring above the card is the scene's.
+test("with the back showing, a resize frames the new card", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await sceneReady(page, "/?quality=medium&lock");
+  await page.evaluate(() => void (document.body.style.background = "#8cfeb8"));
+  await turnOver(page);
+  await expect(html(page)).toHaveAttribute("data-scene-shape", "around");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(html(page)).toHaveAttribute("data-scene-shape", "strip", { timeout: 10_000 });
+  const top = await page.locator("#card").evaluate((el) => el.getBoundingClientRect().top);
+  await expect.poll(async () => inkShare(page, await page.screenshot({ clip: { x: 0, y: 0, width: 390, height: top } })), { timeout: SLOW })
+    .toBeGreaterThan(0.03);
+  expect(errors).toEqual([]);
+});
+
 test.describe("with reduced motion", () => {
   test.use({ reducedMotion: "reduce" });
 
