@@ -5,12 +5,11 @@ import type { Quality } from "./params.ts";
 export type FlipState = {
   flipped: boolean;
   tier: Quality;
-  paused: boolean;
   cardEl: HTMLElement | null;
 };
 
 // The server always renders the front.
-const SERVER: FlipState = { flipped: false, tier: "low", paused: false, cardEl: null };
+const SERVER: FlipState = { flipped: false, tier: "low", cardEl: null };
 
 let state = SERVER;
 const listeners = new Set<() => void>();

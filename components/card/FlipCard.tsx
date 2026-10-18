@@ -33,9 +33,7 @@ export function FlipCard({ label, backLabel, front, back }: Props) {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && flipStore.get().flipped) flipStore.set({ flipped: false });
     };
-    const onVisibility = () => flipStore.set({ paused: document.hidden });
     addEventListener("keydown", onKey);
-    document.addEventListener("visibilitychange", onVisibility);
     // A card taller than the stage (high zoom, very large text) lets the stage scroll; see .stage in globals.css.
     const stage = card.parentElement;
     const fitStage = () => {
@@ -49,7 +47,6 @@ export function FlipCard({ label, backLabel, front, back }: Props) {
     if (stage) resize.observe(stage);
     return () => {
       removeEventListener("keydown", onKey);
-      document.removeEventListener("visibilitychange", onVisibility);
       resize.disconnect();
       document.documentElement.removeAttribute("data-tall");
       flipStore.set({ cardEl: null });
