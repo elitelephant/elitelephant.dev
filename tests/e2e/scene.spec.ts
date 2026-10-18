@@ -328,6 +328,30 @@ test("with the back showing, a resize frames the new card", async ({ page }) => 
   expect(errors).toEqual([]);
 });
 
+// The page says the tab is hidden, or shows again. Here the page keeps running, so a scene that kept drawing while
+// "hidden" would be seen doing it.
+const setHidden = (page: Page, hidden: boolean) => page.evaluate((hidden) => {
+  Object.defineProperty(document, "hidden", { configurable: true, get: () => hidden });
+  Object.defineProperty(document, "visibilityState", { configurable: true, get: () => (hidden ? "hidden" : "visible") });
+  document.dispatchEvent(new Event("visibilitychange"));
+}, hidden);
+
+// In a hidden tab the scene draws nothing, and it starts again when the tab shows. While drawing it reports its frame
+// rate every 2 s, after a 2 s warm-up; 6 s hidden without a report means no frames.
+test("a hidden tab stops the scene drawing until it shows again", async ({ page }) => {
+  const log = await recordScene(page);
+  const reports = async () => (await log()).fpsReports;
+  await sceneReady(page, "/?quality=medium&lock");
+  await expect.poll(reports, { timeout: 20_000 }).toBeGreaterThanOrEqual(1);
+  await setHidden(page, true);
+  const hidden = await reports();
+  await page.waitForTimeout(6000);
+  expect(await reports(), "reports while hidden").toBe(hidden);
+  await setHidden(page, false);
+  await expect.poll(reports, { timeout: 20_000 }).toBeGreaterThan(hidden);
+  await expect(html(page)).toHaveAttribute("data-scene", "ready");
+});
+
 test.describe("with reduced motion", () => {
   test.use({ reducedMotion: "reduce" });
 
