@@ -114,13 +114,15 @@ export function Panels({ label, dotsLabel, sections, children }: Props) {
     return () => io.disconnect();
   }, []);
 
-  // Keys work from anywhere on the back. One panel per press; a panel taller than the box is read to its end first.
+  // Keys work from anywhere on the back, and from the flip button under the card while the back shows. One panel per
+  // press; a panel taller than the box is read to its end first.
   useEffect(() => {
     const box = boxRef.current;
     const back = box?.closest<HTMLElement>(".back");
-    if (!box || !back) return;
+    const deck = back?.closest<HTMLElement>(".deck");
+    if (!box || !back || !deck) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+      if (back.hasAttribute("inert") || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
       const onButton = (e.target as HTMLElement).closest("button");
       let dir = 0;
       let edge: "first" | "last" | null = null;
@@ -149,8 +151,8 @@ export function Panels({ label, dotsLabel, sections, children }: Props) {
         scrollTo(list[i - 1].offsetTop);
       }
     };
-    back.addEventListener("keydown", onKey);
-    return () => back.removeEventListener("keydown", onKey);
+    deck.addEventListener("keydown", onKey);
+    return () => deck.removeEventListener("keydown", onKey);
   }, []);
 
   return (

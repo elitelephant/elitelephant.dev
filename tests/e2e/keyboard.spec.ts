@@ -56,6 +56,19 @@ test("Space on the Back button turns the card instead of scrolling", async ({ pa
   await expect(page.getByRole("button", { name: text.flip })).toBeFocused();
 });
 
+// The flip button sits under the card, outside the back, but while the back shows the keys still move its panels.
+test("keys move the panels from the Back button too", async ({ page }) => {
+  await page.goto("/?quality=low");
+  await page.getByRole("button", { name: text.flip }).click();
+  const back = page.getByRole("button", { name: text.flipBack });
+  await back.focus();
+  for (const [key, index] of [["ArrowDown", 1], ["PageDown", 2], ["ArrowUp", 1], ["Home", 0]] as const) {
+    await page.keyboard.press(key);
+    expect(await panelAtTop(page), key).toBe(index);
+  }
+  await expect(back).toBeFocused();
+});
+
 test("a dot jumps to its panel", async ({ page }) => {
   await page.goto("/?quality=low");
   await page.getByRole("button", { name: text.flip }).click();
