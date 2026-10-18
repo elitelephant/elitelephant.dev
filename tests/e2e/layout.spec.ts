@@ -27,6 +27,12 @@ const inside = (inner: Box, outer: Box, what: string) => {
   expect(inner.right, `${what} right`).toBeLessThanOrEqual(outer.right + 0.5);
   expect(inner.bottom, `${what} bottom`).toBeLessThanOrEqual(outer.bottom + 0.5);
 };
+// The flip button sits under the card, lined up with its right edge, and on screen.
+const underCard = (button: Box, card: Box, screen: Box, what: string) => {
+  expect(button.top, `${what} under the card`).toBeGreaterThanOrEqual(card.bottom);
+  expect(Math.abs(button.right - card.right), `${what} lined up with the card's right edge`).toBeLessThanOrEqual(0.5);
+  inside(button, screen, what);
+};
 
 for (const [width, height] of SIZES) {
   test(`both faces fit at ${width}x${height}`, async ({ page }) => {
@@ -34,17 +40,19 @@ for (const [width, height] of SIZES) {
     await page.goto("/?quality=low");
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
 
+    const screen = { top: 0, left: 0, right: width, bottom: height };
     const [card] = await boxes(page, "#card");
-    inside(card, { top: 0, left: 0, right: width, bottom: height }, "card");
-    for (const selector of ["#front .hi", "#front h1", "#front .links a", '[data-flip="front"]']) {
+    inside(card, screen, "card");
+    for (const selector of ["#front .hi", "#front h1", "#front .links a"]) {
       for (const b of await boxes(page, selector)) inside(b, card, selector);
     }
+    underCard((await boxes(page, "[data-flip]"))[0], card, screen, "flip button");
 
     await page.getByRole("button", { name: text.flip }).click();
+    await expect(page.locator("#back")).not.toHaveAttribute("inert");
     const [dots] = await boxes(page, "#back .dots");
-    const [backButton] = await boxes(page, '[data-flip="back"]');
     inside(dots, card, "dots");
-    inside(backButton, card, "back button");
+    underCard((await boxes(page, "[data-flip]"))[0], card, screen, "flip button on the back");
 
     // Every panel, scrolled into place: its text stays inside the card and clear of the dots.
     for (const { id, label } of site.back.panels) {
@@ -63,7 +71,16 @@ for (const [name, { view, card }] of Object.entries(CARDS)) {
   test(`the card sits where the scene's tests expect it, ${name} (${view.width}x${view.height})`, async ({ page }) => {
     await page.setViewportSize(view);
     await page.goto("/?quality=low");
-    const rect = await page.locator("#card").evaluate((el: HTMLElement) => ({ x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight }));
+    const rect = await page.locator("#card").evaluate((el: HTMLElement) => {
+      const onPage = (el: HTMLElement) => {
+        let [x, y] = [0, 0];
+        for (let n: HTMLElement | null = el; n; n = n.offsetParent as HTMLElement | null) [x, y] = [x + n.offsetLeft, y + n.offsetTop];
+        return { x, y };
+      };
+      const { x, y } = onPage(el);
+      const button = document.querySelector<HTMLElement>("[data-flip]")!;
+      return { x, y, w: el.offsetWidth, h: el.offsetHeight, below: onPage(button).y + button.offsetHeight - (y + el.offsetHeight) };
+    });
     expect(rect).toEqual(card);
   });
 }
@@ -76,12 +93,12 @@ for (const [width, height] of SIZES) {
     await page.setViewportSize({ width, height });
     await page.goto("/?quality=low");
     await page.evaluate(() => document.fonts.ready);
-    // The card fits the stage, so the page has nothing to scroll.
+    // The card and the button under it fit the stage, so the page has nothing to scroll.
     const overStage = await page.evaluate(() => {
       const stage = document.querySelector<HTMLElement>(".stage")!;
       const style = getComputedStyle(stage);
       const room = stage.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
-      return document.getElementById("card")!.offsetHeight - room;
+      return document.querySelector<HTMLElement>(".deck")!.offsetHeight - room;
     });
     expect(overStage).toBeLessThanOrEqual(0.5);
     await page.getByRole("button", { name: text.flip }).click();
@@ -129,7 +146,7 @@ for (const [width, height] of SIZES) {
 }
 
 // Turning a phone or resizing a window while reading the back: the same panel stays in view, its text fits the new
-// card again, and the dots and the Back button stay on the card.
+// card again, the dots stay on the card and the flip button under it.
 test("with the back showing, a resize keeps the panel and fits the text again", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/?quality=low");
@@ -145,6 +162,7 @@ test("with the back showing, a resize keeps the panel and fits the text again", 
     await expect.poll(() => page.locator("#panels").evaluate((box) =>
       Math.max(...[...box.querySelectorAll<HTMLElement>(".panel")].map((p) => p.offsetHeight - box.clientHeight))), { message: `${width}x${height}` }).toBe(0);
     const [card] = await boxes(page, "#card");
-    for (const selector of ["#back .dots", '[data-flip="back"]']) inside((await boxes(page, selector))[0], card, `${selector} at ${width}x${height}`);
+    inside((await boxes(page, "#back .dots"))[0], card, `dots at ${width}x${height}`);
+    underCard((await boxes(page, "[data-flip]"))[0], card, { top: 0, left: 0, right: width, bottom: height }, `flip button at ${width}x${height}`);
   }
 });

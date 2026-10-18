@@ -55,9 +55,25 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
   };
   let still = false; // reduced motion: positions are worked out once per change, then left alone
 
+  // Offsets ignore the card's turn and tilt. They're summed up to the fixed stage, because the card's own offset
+  // parent (the box with the perspective) doesn't start at the screen's corner.
+  const onPage = (el: HTMLElement) => {
+    let x = 0;
+    let y = 0;
+    for (let n: HTMLElement | null = el; n; n = n.offsetParent as HTMLElement | null) {
+      x += n.offsetLeft;
+      y += n.offsetTop;
+    }
+    return { x, y };
+  };
   const cardRect = (): CardRect => {
     const el = flipStore.get().cardEl ?? document.getElementById("card");
-    return el ? { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight } : { x: 0, y: 0, w: 0, h: 0 };
+    if (!el) return { x: 0, y: 0, w: 0, h: 0 };
+    const { x, y } = onPage(el);
+    // The flip button's row under the card (see computeLayout); a hidden button has no offset parent and takes none.
+    const button = document.querySelector<HTMLElement>("[data-flip]");
+    const below = button?.offsetParent ? Math.max(0, onPage(button).y + button.offsetHeight - (y + el.offsetHeight)) : 0;
+    return { x, y, w: el.offsetWidth, h: el.offsetHeight, below };
   };
   const view = () => ({ width: canvas.clientWidth || innerWidth, height: canvas.clientHeight || innerHeight });
 
@@ -68,10 +84,16 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
     }
   }
 
-  function build() {
-    layout = computeLayout(view(), cardRect());
-    // For tests: how the frame sits around the card (a ring, or strips where the screen has room).
+  // For tests: how the frame sits around the card (a ring, or strips where the screen has room), and where the scene
+  // measured the card.
+  function setLayout(card: CardRect) {
+    layout = computeLayout(view(), card);
     root.dataset.sceneShape = layout.shape;
+    root.dataset.sceneCard = `${card.x} ${card.y} ${card.w} ${card.h}`;
+  }
+
+  function build() {
+    setLayout(cardRect());
     balls = makeBalls(layout, count);
     targets = balls.map((b) => b.home.clone());
     group.clear();
@@ -178,9 +200,10 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
   function resize() {
     clearTimeout(rebuildTimer);
     rebuildTimer = window.setTimeout(() => {
-      const next = computeLayout(view(), cardRect());
+      const card = cardRect();
+      const next = computeLayout(view(), card);
       if (next.shape !== layout.shape || Math.abs(next.halfW - layout.halfW) > 0.5) build();
-      else layout = next;
+      else setLayout(card);
       still = false;
       invalidate();
     }, REBUILD_MS);
@@ -271,6 +294,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
       delete root.dataset.sceneMode;
       delete root.dataset.sceneMotion;
       delete root.dataset.sceneShape;
+      delete root.dataset.sceneCard;
       delete root.dataset.bubbles;
     },
   };

@@ -26,12 +26,12 @@ async function checkTargets(page: Page, size: number) {
   await page.goto("/?quality=low");
   await page.evaluate(() => document.fonts.ready);
   expect(await tooSmall(page, "#front .links a", size), "front links").toEqual([]);
-  expect(await tooSmall(page, '[data-flip="front"]', 44), "flip button").toEqual([]);
+  expect(await tooSmall(page, "[data-flip]", 44), "flip button").toEqual([]);
 
   await page.getByRole("button", { name: text.flip }).click();
   await expect(page.locator("#back")).not.toHaveAttribute("inert");
   expect(await tooSmall(page, ".dots button", size), "dots").toEqual([]);
-  expect(await tooSmall(page, '[data-flip="back"]', 44), "Back button").toEqual([]);
+  expect(await tooSmall(page, "[data-flip]", 44), "flip button on the back").toEqual([]);
 
   await page.getByRole("list", { name: text.dots }).getByRole("button", { name: text.labels[2] }).click();
   expect(await panelAtTop(page)).toBe(2);

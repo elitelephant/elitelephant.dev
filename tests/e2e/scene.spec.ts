@@ -338,6 +338,21 @@ test("with the back showing, a resize frames the new card", async ({ page }) => 
   expect(errors).toEqual([]);
 });
 
+// The bubbles are laid out around the card as the scene measures it, which has to be where the page draws it. Measured
+// from the wrong corner, the front's bubbles ring the real card and the frame forms around an empty spot.
+test("the scene measures the card where the page draws it", async ({ page }) => {
+  const drawn = () => page.locator("#card").evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    return [r.x, r.y, r.width, r.height].map(Math.round).join(" ");
+  });
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await sceneReady(page, "/?quality=medium&lock");
+  await expect(html(page)).toHaveAttribute("data-scene-card", await drawn());
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(html(page)).toHaveAttribute("data-scene-shape", "strip", { timeout: 10_000 });
+  await expect(html(page)).toHaveAttribute("data-scene-card", await drawn());
+});
+
 // The page says the tab is hidden, or shows again. Here the page keeps running, so a scene that kept drawing while
 // "hidden" would be seen doing it.
 const setHidden = (page: Page, hidden: boolean) => page.evaluate((hidden) => {

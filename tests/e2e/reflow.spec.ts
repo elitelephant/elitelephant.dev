@@ -23,7 +23,7 @@ async function frontInsideCard(page: Page) {
   expect(top, "the card's top").toBeGreaterThanOrEqual(0);
   const outside = await page.evaluate(() => {
     const card = document.getElementById("card")!.getBoundingClientRect();
-    return [...document.querySelectorAll("#front .hi, #front h1, #front .links a, #front .flip")]
+    return [...document.querySelectorAll("#front .hi, #front h1, #front .links a")]
       .filter((el) => {
         const r = el.getBoundingClientRect();
         return r.top < card.top - 0.5 || r.bottom > card.bottom + 0.5 || r.left < card.left - 0.5 || r.right > card.right + 0.5;
@@ -31,6 +31,25 @@ async function frontInsideCard(page: Page) {
       .map((el) => el.textContent);
   });
   expect(outside, "front content outside the card").toEqual([]);
+}
+
+// Scrolled to its end, the stage shows the whole flip button, under the card. The stage scrolls once the page has
+// measured the card, so this waits for that.
+async function buttonInReach(page: Page) {
+  const measure = () => page.evaluate(() => {
+    document.querySelector(".stage")!.scrollTo({ top: 1e6, behavior: "instant" });
+    const box = (el: Element) => {
+      const r = el.getBoundingClientRect();
+      return { top: r.top, left: r.left, right: r.right, bottom: r.bottom };
+    };
+    return { button: box(document.querySelector("[data-flip]")!), card: box(document.getElementById("card")!), width: innerWidth, height: innerHeight };
+  });
+  await expect.poll(async () => {
+    const { button, width, height } = await measure();
+    return button.left >= 0 && button.right <= width && button.bottom <= height;
+  }, { message: "the flip button scrolls into reach" }).toBe(true);
+  const { button, card } = await measure();
+  expect(button.top, "the flip button under the card").toBeGreaterThanOrEqual(card.bottom);
 }
 
 // Turns the card (the button may first have to scroll into view), reads every panel to its last line, and turns back.
@@ -55,6 +74,7 @@ for (const [width, height] of ZOOMS) {
     await page.goto("/?quality=low");
     await page.evaluate(() => document.fonts.ready);
     await frontInsideCard(page);
+    await buttonInReach(page);
     await everyPanelReads(page);
   });
 }
@@ -66,6 +86,7 @@ for (const [width, height] of [[375, 667], [844, 390], [1280, 800]] as const) {
     await page.addStyleTag({ content: SPACING });
     await page.evaluate(() => document.fonts.ready);
     await frontInsideCard(page);
+    await buttonInReach(page);
     await everyPanelReads(page);
   });
 }
@@ -78,25 +99,26 @@ for (const [width, height, px] of [[390, 844, 21], [390, 844, 32], [1280, 800, 3
     await page.goto("/?quality=low");
     await page.evaluate(() => document.fonts.ready);
     await frontInsideCard(page);
+    await buttonInReach(page);
 
     await page.getByRole("button", { name: text.flip }).click();
     await expect(page.locator("#back")).not.toHaveAttribute("inert");
     const body = await page.locator("#back .panel:not(.story) p").first().evaluate((el) => getComputedStyle(el).fontSize);
     expect(body).toBe(`${px}px`);
 
-    // The panels don't fit, and say so: soft snapping, and a fading bottom edge while more is below.
+    // On a phone the card can't grow past the screen, so the panels don't fit, and say so: soft snapping, and a fading
+    // bottom edge while more is below. A desktop card grows with its front, and whether the back fits depends on the
+    // copy; either way every panel reads to its end (below).
     const panels = page.locator("#panels");
-    await expect(panels).toHaveAttribute("data-overflow");
-    if (width < 760) await expect(panels).toHaveAttribute("data-more");
-    await panels.evaluate((box) => box.scrollTo({ top: box.scrollHeight, behavior: "instant" }));
-    await expect(panels).not.toHaveAttribute("data-more");
+    if (width < 760) {
+      await expect(panels).toHaveAttribute("data-overflow");
+      await expect(panels).toHaveAttribute("data-more");
+      await panels.evaluate((box) => box.scrollTo({ top: box.scrollHeight, behavior: "instant" }));
+      await expect(panels).not.toHaveAttribute("data-more");
+    }
 
-    // The Back button grows with the text, and so does the room kept for it under the panels.
-    const [box, back] = await page.evaluate(() => [
-      document.getElementById("panels")!.getBoundingClientRect().bottom,
-      document.querySelector('[data-flip="back"]')!.getBoundingClientRect().top,
-    ]);
-    expect(back).toBeGreaterThanOrEqual(box);
+    // The button grows with the text, and stays under the card and within reach.
+    await buttonInReach(page);
 
     await page.getByRole("button", { name: text.flipBack }).click();
     await everyPanelReads(page);

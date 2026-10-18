@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
-import { expectAngle, moveAway, text, turnOver } from "./helpers";
+import { site } from "../../content/site";
+import { expectAngle, moveAway, text } from "./helpers";
 
 // Headless WebKit draws the turned card in software at about 10 fps, so the spring takes several seconds to settle.
 const SLOW = 30_000;
@@ -33,45 +34,41 @@ test("on a phone the back is as dark and opaque as the front", async ({ page }) 
   expect(await style(page, "#back", "backgroundColor")).toBe("rgb(11, 16, 14)");
 });
 
-test.describe("the Back button", () => {
-  test.use({ reducedMotion: "reduce" });
+// The flip button stays under the card while it turns. Its label switches with the face, edge-on, where neither face
+// can be seen; its name switches on the click, since focus may land on it while the card is still heading back.
+test("the flip button's label follows the face, and its name the click", async ({ page }) => {
+  await page.goto("/?quality=low");
+  const button = page.locator("[data-flip]");
+  await expect(button).toHaveText(site.front.flip, { useInnerText: true });
+  await expect(button).toHaveAccessibleName(site.front.flip);
 
-  // 390x664 is an iPhone 13 with Safari's bars showing; 390x844, the same phone with them hidden.
-  for (const [width, height] of [[320, 568], [390, 664], [390, 844], [844, 390]] as const) {
-    test(`covers no panel text at ${width}x${height}, at either end of each panel`, async ({ page }) => {
-      await page.setViewportSize({ width, height });
-      await page.goto("/?quality=low");
-      await turnOver(page);
-      const covered = await page.evaluate(async () => {
-        const box = document.querySelector<HTMLElement>("#panels")!;
-        const button = document.querySelector('[data-flip="back"]')!.getBoundingClientRect();
-        box.style.scrollSnapType = "none"; // exact scroll positions; snapping is not what this checks
-        const settle = () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
-        const found: string[] = [];
-        for (const panel of box.querySelectorAll<HTMLElement>(".panel")) {
-          for (const top of new Set([panel.offsetTop, panel.offsetTop + panel.offsetHeight - box.clientHeight])) {
-            box.scrollTop = top;
-            await settle();
-            const view = box.getBoundingClientRect();
-            const walker = document.createTreeWalker(panel, NodeFilter.SHOW_TEXT);
-            for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-              if (!node.textContent?.trim() || node.parentElement?.closest(".sr-only")) continue;
-              const range = document.createRange();
-              range.selectNodeContents(node);
-              for (const line of range.getClientRects()) {
-                // The part of the line the scrolling box lets through.
-                const lineTop = Math.max(line.top, view.top);
-                const lineBottom = Math.min(line.bottom, view.bottom);
-                if (lineBottom <= lineTop) continue;
-                const under = lineBottom > button.top && lineTop < button.bottom && line.right > button.left && line.left < button.right;
-                if (under) found.push(`${panel.id} at ${Math.round(top)}: "${node.textContent.trim().slice(0, 40)}"`);
-              }
-            }
-          }
-        }
-        return found;
-      });
-      expect(covered).toEqual([]);
-    });
+  // Every frame of the turn: the angle drawn, the label shown and the button's name, read together.
+  const frames = await page.evaluate(() => new Promise<[number, string, string | null][]>((done) => {
+    const card = document.getElementById("card")!;
+    const button = document.querySelector<HTMLElement>("[data-flip]")!;
+    const frames: [number, string, string | null][] = [];
+    button.click();
+    const read = () => {
+      const angle = Number(/rotateY\((-?[\d.]+)deg\)/.exec(card.style.transform)?.[1] ?? 0);
+      frames.push([angle, button.innerText.trim(), button.getAttribute("aria-label")]);
+      if (angle < 170 && frames.length < 300) requestAnimationFrame(read);
+      else done(frames);
+    };
+    requestAnimationFrame(read);
+  }));
+  expect(frames.some(([angle]) => angle > 0 && angle < 89.5), "frames before edge-on").toBe(true);
+  expect(frames.some(([angle]) => angle > 90.5), "frames after edge-on").toBe(true);
+  for (const [angle, label, name] of frames) {
+    if (Math.abs(angle - 90) < 0.5) continue; // the label switches on the exact angle; the transform shows it rounded
+    expect(label, `label at ${angle}°`).toBe(angle < 90 ? site.front.flip : site.back.flip);
+    expect(name, `name at ${angle}°`).toBe(site.back.flipLabel);
   }
+
+  await moveAway(page);
+  await expectAngle(page, 180, SLOW);
+  await expect(button).toHaveText(site.back.flip, { useInnerText: true });
+  await page.keyboard.press("Escape");
+  await expect(button).toHaveAccessibleName(site.front.flip);
+  await expectAngle(page, 0, SLOW);
+  await expect(button).toHaveText(site.front.flip, { useInnerText: true });
 });

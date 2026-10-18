@@ -35,10 +35,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={GeistSans.variable}>
       <head>
-        {/* Without JavaScript the card can't turn, so only the front shows and the flip button is hidden. With no
-            turn there's nothing to flash a scrollbar, so the stage may always scroll a card taller than the screen. */}
+        {/* Without JavaScript the card can't turn, so only the front shows and the flip button is hidden; the card
+            takes the room the button would have used. With no turn there's nothing to flash a scrollbar, so the stage
+            may always scroll a card taller than the screen. The selectors outweigh globals.css, whichever loads last. */}
         <noscript>
-          <style>{".front .flip{display:none}.stage{overflow-y:auto}"}</style>
+          <style>{"html:root{--below:0px}.deck .flip{display:none}.stage{overflow-y:auto}"}</style>
         </noscript>
       </head>
       <body>{children}</body>

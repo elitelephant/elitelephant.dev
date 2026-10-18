@@ -16,10 +16,12 @@ export type Side = "top" | "right" | "bottom" | "left";
 // around: the crowd circles the card (desktop). strip: the screen leaves room on one or two sides only (phones,
 // tablets, short landscape screens), and the crowd fills that room instead of sitting behind the card or off screen.
 export type FrameShape = "around" | "strip";
-// room: from each edge of the card to the edge of the screen, in world units.
-export type Layout = { halfW: number; box: Box; room: Record<Side, number>; scale: number; shape: FrameShape };
+// room: from each edge of the card to the edge of the screen, in world units. free: the same, less the row the flip
+// button takes under the card; it decides which sides the frame uses.
+export type Layout = { halfW: number; box: Box; room: Record<Side, number>; free: Record<Side, number>; scale: number; shape: FrameShape };
 export type View = { width: number; height: number };
-export type CardRect = { x: number; y: number; w: number; h: number };
+// below: the height the flip button takes under the card, its gap included, in px.
+export type CardRect = { x: number; y: number; w: number; h: number; below?: number };
 
 export function computeLayout(view: View, card: CardRect): Layout {
   const unit = (2 * HALF_H) / view.height;
@@ -31,15 +33,18 @@ export function computeLayout(view: View, card: CardRect): Layout {
     bottom: -(card.y + card.h - view.height / 2) * unit,
   };
   const room = { top: HALF_H - box.top, right: halfW - box.right, bottom: box.bottom + HALF_H, left: box.left + halfW };
-  const open = Object.values(room).filter((r) => r > OPEN_ROOM).length;
+  // Bubbles may pass behind the flip button, but its row is no side to frame the card from: on a phone on its side,
+  // counting it would turn the side strips into a ring and hide most of the front's bubbles behind the card.
+  const free = { ...room, bottom: room.bottom - (card.below ?? 0) * unit };
+  const open = Object.values(free).filter((r) => r > OPEN_ROOM).length;
   // Rings need a few cells per bubble to read as bubbles, so small screens keep them fairly big, as long as the
   // largest one still fits the thinnest strip.
   if (open < 3) {
-    const thinnest = Math.min(...Object.values(room).filter((r) => r > OPEN_ROOM));
-    return { halfW, box, room, scale: Math.min(0.8, (thinnest - STRIP_GAP) / (2 * R_MAX * NEAR)), shape: "strip" };
+    const thinnest = Math.min(...Object.values(free).filter((r) => r > OPEN_ROOM));
+    return { halfW, box, room, free, scale: Math.min(0.8, (thinnest - STRIP_GAP) / (2 * R_MAX * NEAR)), shape: "strip" };
   }
   const side = Math.min(room.left, room.right);
-  return { halfW, box, room, scale: side > 2.2 ? Math.min(1, side / 4.2) : 0.7, shape: "around" };
+  return { halfW, box, room, free, scale: side > 2.2 ? Math.min(1, side / 4.2) : 0.7, shape: "around" };
 }
 
 export type Ball = {

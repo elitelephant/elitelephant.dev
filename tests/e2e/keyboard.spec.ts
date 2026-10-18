@@ -14,7 +14,11 @@ test("tab order, flip with Enter, keys move one panel, Escape returns", async ({
     await expect(page.getByRole("link", { name: link.label + site.contact.newTab, exact: true })).toBeFocused();
   }
   await page.keyboard.press("Tab");
-  await expect(page.getByRole("button", { name: text.flip, exact: true })).toBeFocused();
+  const button = page.getByRole("button", { name: text.flip, exact: true });
+  await expect(button).toBeFocused();
+  // The button sits on the mint page, so its focus ring can't be the page's own mint.
+  const [ring, pageColor] = await button.evaluate((el) => [getComputedStyle(el).outlineColor, getComputedStyle(document.body).backgroundColor]);
+  expect(ring).not.toBe(pageColor);
 
   await page.keyboard.press("Enter");
   const panels = page.locator("#panels");

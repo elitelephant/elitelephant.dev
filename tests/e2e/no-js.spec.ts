@@ -28,9 +28,16 @@ test("without JavaScript the headline and every link work", async ({ page }) => 
 // Without JavaScript only the front shows, and the flip button, which would do nothing, is hidden.
 test("without JavaScript the back stays hidden and there is no flip button", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator('[data-flip="front"]')).toBeHidden();
+  await expect(page.locator("[data-flip]")).toBeHidden();
   await expect(page.locator("#back")).toHaveAttribute("inert");
   await expect(page.getByRole("heading", { name: site.back.panels[0].title })).toHaveCount(0);
+});
+
+// On a phone on its side the card takes the full height; without JavaScript there is no button to leave room for.
+test("without JavaScript the card takes the room the button would have used", async ({ page }) => {
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.goto("/");
+  expect(await page.locator("#card").evaluate((el: HTMLElement) => el.offsetHeight)).toBe(390 - 32);
 });
 
 test("metadata is in the HTML", async ({ page }) => {

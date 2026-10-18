@@ -95,6 +95,8 @@ test.describe("on a touch screen", () => {
     await expect.poll(() => cardAngle(page)).toBeGreaterThan(0);
     await expectAngle(page, 180);
     expect((await cardTransform(page)).tilt).toBe(0);
+    // The button stays under the card, and the finger that tapped it leaves it unlit: its hover is for a mouse.
+    expect(await page.locator("[data-flip]").evaluate((el) => getComputedStyle(el).backgroundImage)).toBe("none");
     await page.getByRole("button", { name: text.flipBack }).tap();
     await expectAngle(page, 0);
   });

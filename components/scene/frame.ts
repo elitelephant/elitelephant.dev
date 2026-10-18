@@ -51,11 +51,12 @@ const SIDES: readonly Side[] = ["top", "right", "bottom", "left"];
 
 // Seats only where the screen has room, spread over it from near the card out to the edge of the screen, with more
 // seats where there is more room. Returns false when no side has room, so the caller falls back to the ring.
-function stripSeat(b: Ball, { box, room, halfW }: Layout, l: number, out: Vector3) {
+// Which sides have room leaves out the flip button's row; a side that has it spreads over all of it, button included.
+function stripSeat(b: Ball, { box, room, free, halfW }: Layout, l: number, out: Vector3) {
   const across = box.right - box.left;
   const down = box.top - box.bottom;
   const length: Record<Side, number> = { top: across, bottom: across, right: down, left: down };
-  const weight = SIDES.map((side) => length[side] * Math.min(1, Math.max(0, room[side] - OPEN_ROOM) / (GAP[1] - STRIP_GAP)));
+  const weight = SIDES.map((side) => length[side] * Math.min(1, Math.max(0, free[side] - OPEN_ROOM) / (GAP[1] - STRIP_GAP)));
   const total = weight.reduce((sum, w) => sum + w, 0);
   if (total <= 0) return false;
   let s = ((b.slot + 1) % 1) * total;
