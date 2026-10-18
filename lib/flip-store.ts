@@ -1,15 +1,13 @@
 // State shared by the card and the scene. The scene reads it every frame with get(), without re-rendering.
 import { useSyncExternalStore } from "react";
-import type { Quality } from "./params.ts";
 
 export type FlipState = {
   flipped: boolean;
-  tier: Quality;
   cardEl: HTMLElement | null;
 };
 
 // The server always renders the front.
-const SERVER: FlipState = { flipped: false, tier: "low", cardEl: null };
+const SERVER: FlipState = { flipped: false, cardEl: null };
 
 let state = SERVER;
 const listeners = new Set<() => void>();

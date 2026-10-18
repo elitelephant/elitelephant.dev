@@ -2,7 +2,6 @@
 
 import dynamic from "next/dynamic";
 import { Component, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { flipStore } from "@/lib/flip-store";
 import { readParams, type Quality } from "@/lib/params";
 import { NO_SCENE, pickQuality, probeDevice } from "@/lib/quality";
 import { createRecoveryWatch, type LiveTier, type Step } from "@/lib/quality-monitor";
@@ -27,9 +26,9 @@ class Boundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   }
 }
 
+// For tests: the tier the page is at.
 const markTier = (tier: Quality) => {
   document.documentElement.dataset.tier = tier;
-  flipStore.set({ tier });
 };
 
 // The text paints first; the scene loads after the page has loaded, when the browser is idle.
