@@ -25,6 +25,7 @@ export default function Scene({ tier, canRise, lock, onStep }: Props) {
   return (
     <Canvas
       className="scene"
+      // Inline: the Canvas sets position: relative on its own box inline, which no stylesheet rule outranks.
       style={{ position: "fixed", inset: 0 }}
       aria-hidden="true"
       flat

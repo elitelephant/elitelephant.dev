@@ -9,8 +9,9 @@
   /* The smallest area a pointer can hit reliably: 24 px with a mouse, 44 px with a finger. Links and dots get theirs
      without changing how they look, and never from the text size. */
   --hit: 24px;
-  --dot-x: 35px; /* from the card's right edge to the centre of the dots */
-  --flip-gap: 12px; --below: calc(44px + var(--flip-gap)); /* the flip button under the card, and the gap above it */
+  --dot-x: 35px; /* from the card's right edge to the centre of the dots, in the margin .panel keeps clear for them */
+  /* The flip button under the card (44 px, its min-height) and the gap above it. */
+  --flip-gap: 12px; --below: calc(44px + var(--flip-gap));
   /* The stage's padding under the deck, clear of an iPhone's home indicator. The card's height takes it into account,
      so the card and the button never outgrow the stage. */
   --stage-bottom: max(16px, env(safe-area-inset-bottom));
@@ -41,7 +42,8 @@ a { color: var(--mint); text-decoration: none; text-underline-offset: 3px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* The 3D scene sits behind the card; bubbles are grabbed on the canvas itself. It shows once its first frame is
-   drawn (its bubbles then grow in), and fades out if the device turns out too slow for it. */
+   drawn (its bubbles then grow in), and fades out if the device turns out too slow for it; SceneLoader waits the same
+   .7s before it takes the scene away. */
 .scene { opacity: 0; transition: opacity .7s ease; }
 html[data-scene="ready"] .scene { opacity: 1; transition: none; }
 .scene canvas { touch-action: none; cursor: grab; }
@@ -57,8 +59,8 @@ html[data-tall] .stage, .stage:has(> .notfound) { overflow-y: auto; }
 /* The card and, under it, the button that turns it. The perspective sits here, on the card's parent, centred on the
    card rather than on the card and button together, so the turn stays even top to bottom. */
 .deck { display: grid; gap: var(--flip-gap); width: min(780px, 100%); perspective: 1800px; perspective-origin: 50% calc((100% - var(--below)) / 2); }
-/* 456 px tall, or what a shorter window leaves above the button, and taller if its front needs it, so no text is ever
-   cut off. The back takes the same height. */
+/* 456 px tall, or what a shorter window leaves above the button (16 px is the stage's top padding), and taller if its
+   front needs it, so no text is ever cut off. The back takes the same height. */
 .card { position: relative; display: grid; transform-style: preserve-3d; pointer-events: auto; will-change: transform;
   min-height: min(456px, calc(100vh - 16px - var(--stage-bottom) - var(--below)));
   min-height: min(456px, calc(100svh - 16px - var(--stage-bottom) - var(--below))); }
@@ -70,7 +72,8 @@ html[data-tall] .stage, .stage:has(> .notfound) { overflow-y: auto; }
   background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='288' height='288'><mask id='k'><rect width='288' height='288' fill='%23fff'/><pattern id='l' width='6' height='6' patternUnits='userSpaceOnUse'><rect width='6' height='1' fill='%23000' opacity='.12'/></pattern><rect width='288' height='288' fill='url(%23l)'/><pattern id='c' width='48' height='6' patternUnits='userSpaceOnUse'><rect width='1' height='6' fill='%23000' opacity='.18'/></pattern><rect width='288' height='288' fill='url(%23c)'/></mask><rect width='288' height='288' fill='%230b100e' mask='url(%23k)'/><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' seed='1' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 1.4 0 0 0 -.6'/></filter><rect width='288' height='288' filter='url(%23g)' opacity='.22'/></svg>") center top / 288px 288px;
   box-shadow: 0 30px 80px -30px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.02) inset; }
 
-/* Greeting, headline and links as one block in the middle of the card, left-aligned. */
+/* Greeting, headline and links as one block in the middle of the card, left-aligned. Its 0° turn pairs with the back's
+   180°, so the two faces sit back to back. */
 .front { position: relative; transform: rotateY(0deg); padding: var(--pad-y) var(--pad-x); display: grid; align-content: center; row-gap: 22px; }
 .hi { color: var(--muted); font-size: 1rem; letter-spacing: .005em; }
 h1 { align-self: center; font-size: 3rem; font-weight: 600; line-height: 1.04; letter-spacing: -.025em; text-wrap: balance; }
@@ -93,6 +96,7 @@ h1 .now { display: block; color: var(--mint); margin-top: .12em; }
 }
 /* A mint ring would vanish against the mint page. */
 .flip:focus-visible { outline-color: var(--card); }
+/* 15 px next to the button's 14 px text, and it grows with the text. */
 .flip svg { width: 1.0715em; height: 1.0715em; }
 /* The button holds both labels and shows the one for the face in view; contents keeps the gap to the icon. */
 .flip > span { display: contents; }
@@ -105,7 +109,7 @@ h1 .now { display: block; color: var(--mint); margin-top: .12em; }
 .card:not([data-side="back"]) .back, .card[data-side="back"] .front { opacity: 0; }
 .panels { position: absolute; inset: 0; overflow-y: auto; scroll-snap-type: y mandatory; overscroll-behavior: contain; scrollbar-width: none; }
 .panels::-webkit-scrollbar { display: none; }
-/* As much room below the text as above it. */
+/* As much room below the text as above it, and 40 px more on the right, where the dots are. */
 .panel { min-height: 100%; scroll-snap-align: start; scroll-snap-stop: always; padding: var(--panel-top, var(--pad-y)) calc(var(--pad-x) + 40px) var(--panel-top, var(--pad-y)) var(--pad-x);
   display: flex; flex-direction: column; justify-content: safe center; }
 .card[data-ready] .panel > * { opacity: 0; transform: translateY(10px); transition: opacity .5s, transform .5s; }
@@ -115,12 +119,14 @@ h1 .now { display: block; color: var(--mint); margin-top: .12em; }
 .panel.in > *:nth-child(4) { transition-delay: .18s; }
 .panel.in > *:nth-child(5) { transition-delay: .24s; }
 /* --fit, set on the panels (1 or less), shrinks the back's text until the longest panel fits without scrolling.
-   Labels stop at 11 px, the smallest size Apple allows. */
+   Labels stop at 11 px, the smallest size Apple allows. Panels.tsx measures right after setting it, so nothing in a
+   panel animates its size or uses gap, and the panels take their size from the card. */
 .label { font-size: max(.6875rem, calc(.75rem * var(--fit, 1))); font-weight: 500; color: var(--mint); letter-spacing: .12em; margin-bottom: calc(18px * var(--fit, 1)); text-transform: uppercase; }
 /* pretty keeps a word from sitting alone on a paragraph's last line. */
 p { color: var(--muted); line-height: 1.62; font-size: 1rem; margin-bottom: 12px; max-width: 60ch; text-wrap: pretty; }
 .panel p { font-size: calc(1rem * var(--fit, 1)); margin-bottom: calc(12px * var(--fit, 1)); }
-/* The last panel: "Say hi." large over the links, in the middle of the card on every screen. */
+/* The last panel: "Say hi." large over the links, in the middle of the card on every screen. The two classes outrank
+   the phone and landscape rules that start the other panels at the top. */
 .panel.say-hi { justify-content: safe center; }
 .say-hi .say { font-size: calc(2.75rem * var(--fit, 1)); font-weight: 600; line-height: 1.04; letter-spacing: -.025em; color: var(--text);
   margin-bottom: calc(22px * var(--fit, 1)); }
@@ -170,7 +176,8 @@ p { color: var(--muted); line-height: 1.62; font-size: 1rem; margin-bottom: 12px
   .card { min-height: min(max(64vh, 440px), calc(100vh - 16px - var(--stage-bottom) - var(--below)), 560px);
     min-height: min(max(64svh, 440px), calc(100svh - 16px - var(--stage-bottom) - var(--below)), 560px); }
   h1 { font-size: clamp(1.875rem, .5rem + 8.4vw, 2.75rem); }
-  /* Each panel starts at the top, so the label sits in the same place on all three; a short one ends early. */
+  /* Each panel but Say hi starts at the top, so the label sits in the same place on each; a short one ends early.
+     22 px more on the right, where the dots now sit flush with the edge. */
   .panel { padding-right: calc(var(--pad-x) + 22px); justify-content: flex-start; }
   /* Tighter lines and gaps, so the text can stay larger in the smaller card. */
   .panel p, .story p { line-height: 1.5; margin-bottom: calc(10px * var(--fit, 1)); }
@@ -184,7 +191,8 @@ p { color: var(--muted); line-height: 1.62; font-size: 1rem; margin-bottom: 12px
 @media (max-width: 760px) and (orientation: portrait) {
   body::before { background-image: url(/fallback/rings-tall.webp); }
 }
-/* Short landscape phones: let the card use the full height, less the button under it. */
+/* Short landscape phones: let the card use the full height, less the button under it. A phone up to 760 px wide also
+   matches the block above; this one comes after it, so its values win. */
 @media (max-height: 520px) and (min-width: 560px) {
   .deck { width: min(640px, 68vw); }
   .card { min-height: calc(100vh - 16px - var(--stage-bottom) - var(--below)); min-height: calc(100svh - 16px - var(--stage-bottom) - var(--below)); }
