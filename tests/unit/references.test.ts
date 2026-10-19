@@ -8,9 +8,9 @@ import { problems } from "../../scripts/commit-msg.mjs";
 
 // Whoever reads this repo can follow every comment: no IDs from notes kept elsewhere, no paths to files not here.
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const files = execFileSync("git", ["ls-files", "-z"], { cwd: root, encoding: "utf8" })
-  .split("\0")
-  .filter((f) => f && f !== "package-lock.json" && !/\.(png|webp|ico|jpe?g|gif|woff2?)$/.test(f))
+const tracked = execFileSync("git", ["ls-files", "-z"], { cwd: root, encoding: "utf8" }).split("\0").filter(Boolean);
+const files = tracked
+  .filter((f) => f !== "package-lock.json" && !/\.(png|webp|ico|jpe?g|gif|woff2?)$/.test(f))
   .filter((f) => existsSync(path.join(root, f)));
 const read = (f: string) => readFileSync(path.join(root, f), "utf8");
 
@@ -30,6 +30,36 @@ test("every path the repo mentions points at a file that exists", () => {
       .map((p) => `${f}: ${p}`),
   );
   assert.deepEqual(missing, []);
+});
+
+// The comments of a file, and all of a Markdown file. JSON has no comments, and its globs look like one.
+function prose(file: string, text: string) {
+  if (file.endsWith(".md")) return text;
+  if (file.endsWith(".json")) return "";
+  const found = [...text.matchAll(/\/\*[\s\S]*?\*\/|<!--[\s\S]*?-->|(?<![:\w])\/\/.*$/gm)].map((m) => m[0]);
+  if (/\.(ya?ml|sh)$|(^|\/)\.git\w*$|^\.githooks\//.test(file)) found.push(...[...text.matchAll(/(?:^|\s)#.*$/gm)].map((m) => m[0]));
+  return found.join("\n");
+}
+
+// A file name with no folder, like the bare own.ts the path check leaves alone.
+const NAME = /(?<![\w@.*/-])\w[\w.-]*\.(?:tsx?|mjs|cjs|js|css|html|md|json|svg|png|webp|ya?ml)(?![\w/*-])/g;
+const LIBRARIES = new Set(["next.js", "three.js"]);
+
+test("every file a comment names by itself is in the repo", () => {
+  const names = new Set(tracked.map((f) => path.basename(f)));
+  const missing = files.flatMap((f) =>
+    (prose(f, read(f)).replace(URLS, "").match(NAME) ?? [])
+      .filter((n) => !names.has(n) && !LIBRARIES.has(n.toLowerCase()))
+      .map((n) => `${f}: ${n}`),
+  );
+  assert.deepEqual(missing, []);
+});
+
+// The tracker and the drafts behind the site stay out of it. Built here, so this file passes its own check.
+test("no names of the tracker or the drafts behind the site", () => {
+  const words = [new RegExp(`\\b${"Expo"}nential\\b`), new RegExp(`\\b${"mock"}-?ups?\\b`, "i")];
+  const found = files.flatMap((f) => words.flatMap((w) => (w.test(read(f)) ? [`${f}: ${w.source}`] : [])));
+  assert.deepEqual(found, []);
 });
 
 test("the commit-msg hook turns away decision IDs and ticket numbers, and nothing else", () => {
