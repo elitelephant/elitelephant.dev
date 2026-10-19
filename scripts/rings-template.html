@@ -45,15 +45,17 @@ function scatter(rnd, zone, count, rMin, rMax, area = { x: 0, y: 0, w: W, h: H }
 }
 
 const LAYOUTS = {
-  // Static fallback behind the card on wide screens (drawn at 1920×1200): the card sits in the middle (780×456 at most).
+  // Static fallback behind the card on wide screens (drawn at 1920×1200): the card sits in the middle (780×456 at most)
+  // with the flip button's 56 px row under it, all inside this zone.
   'fallback-wide': () => {
     const zone = { x: W / 2 - 430, y: H / 2 - 270, w: 860, h: 540 };
     return scatter(seeded(11), zone, 52, 10, 70);
   },
-  // Static fallback on phones (drawn at 390×844, shown centered and cropped to the screen): the card sits in the
-  // middle (335×490), the bubbles live in the strips above and below it.
+  // Static fallback on phones (drawn at 390×844, shown centered and cropped to the screen): the card (335×540) and the
+  // flip button's 56 px row under it sit in the middle, the bubbles live in the strips above and below them.
   'fallback-tall': () => {
-    const zone = { x: -50, y: H / 2 - 245, w: W + 100, h: 490 };
+    const deck = 540 + 56;
+    const zone = { x: -50, y: (H - deck) / 2, w: W + 100, h: deck };
     return scatter(seeded(5), zone, 22, 8, 46);
   },
 };
