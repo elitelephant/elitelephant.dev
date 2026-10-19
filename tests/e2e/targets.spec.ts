@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { site } from "../../content/site";
 import { panelAtTop, text } from "./helpers";
 
 // A finger needs about 44×44 px to hit what it aims at (Apple, WCAG 2.5.5); a mouse 24×24 (WCAG 2.5.8). Links and dots
@@ -55,4 +56,15 @@ test.describe("with a mouse", () => {
       await checkTargets(page, 24);
     });
   }
+});
+
+// The 404's link home, like the card's links, gets a finger-sized area without changing how it looks.
+test.describe("the 404 with a finger", () => {
+  test.use({ hasTouch: true, isMobile: true });
+  test("its link is 44 px or more at 390x844", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/no-such-page");
+    await expect(page.getByRole("link", { name: site.notFound.link })).toBeVisible();
+    expect(await tooSmall(page, ".notfound a", 44)).toEqual([]);
+  });
 });

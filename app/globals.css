@@ -62,8 +62,8 @@ h1 .now { display: block; color: var(--mint); margin-top: .12em; }
 .front .links { margin-top: 10px; }
 .links .ext { color: var(--faint); }
 /* The hit area grows around the link, centred, without moving the text. */
-.links a { position: relative; }
-.links a::before { content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, var(--hit)); height: max(100%, var(--hit)); transform: translate(-50%, -50%); }
+.links a, .notfound a { position: relative; }
+.links a::before, .notfound a::before { content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, var(--hit)); height: max(100%, var(--hit)); transform: translate(-50%, -50%); }
 
 /* On the mint page, under the card's right edge: dark like the card, so it reads with bubbles passing behind it. */
 .flip { justify-self: end; pointer-events: auto; display: inline-flex; align-items: center; gap: 8px; min-height: 44px;
