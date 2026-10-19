@@ -23,11 +23,13 @@ type Options = {
 type Mode = "scatter" | "gather";
 const KICK = 2.5; // the card passing edge-on pushes the air
 const REBUILD_MS = 150;
-// When the scene first shows, each bubble grows from nothing in its own place, at its own moment, over the plain mint
-// the page starts on. With reduced motion they are simply there.
-const GROW_S = 0.7;
+// When the scene first shows, each bubble inflates from nothing in its own place, at its own moment, over the plain
+// mint the page starts on: it overshoots its size by about 17 % and settles, done within two seconds, well before the
+// scene settles at five. With reduced motion they are simply there.
+const GROW_S = 0.85;
 const GROW_SPREAD = 1.1;
-const easeOut = (x: number) => 1 - Math.pow(1 - x, 3);
+const OVERSHOOT = 2.3; // the ease-out-back's constant: it swings about 17 % past full size
+const inflate = (x: number) => 1 + (OVERSHOOT + 1) * Math.pow(x - 1, 3) + OVERSHOOT * Math.pow(x - 1, 2);
 
 export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: Options) {
   const canvas = gl.domElement;
@@ -263,7 +265,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
         for (let i = 0; i < meshes.length; i++) {
           const g = grown ? 1 : Math.min(1, Math.max(0, (t - growFrom - growDelay[i]) / GROW_S));
           if (g < 1) full = false;
-          meshes[i].scale.setScalar(balls[i].r * (1 + breath(balls[i], motionTime, breathAmount) * BREATH_SCALE) * Math.max(1e-4, easeOut(g)));
+          meshes[i].scale.setScalar(balls[i].r * (1 + breath(balls[i], motionTime, breathAmount) * BREATH_SCALE) * Math.max(1e-4, inflate(g)));
         }
         grown ||= full;
       }
