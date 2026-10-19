@@ -243,3 +243,17 @@ for (const [width, height] of [[320, 568], [360, 800], [375, 667], [390, 844], [
     expect(alone).toEqual([]);
   });
 }
+
+// On a phone on its side, wide or narrow, each panel starts at the top: the label sits at the same height on all of
+// them, as on a phone held upright, instead of moving with each panel's length.
+for (const [width, height] of [[667, 375], [844, 390], [932, 430]] as const) {
+  test(`on its side, the panel label stays at the same height at ${width}x${height}`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await page.goto("/?quality=low");
+    await page.evaluate(() => document.fonts.ready);
+    // "Say hi." has no label: its panel sits in the middle of the card on every screen.
+    const tops = await page.locator(".panel:has(> .label)").evaluateAll((panels) =>
+      panels.map((panel) => Math.round((panel.querySelector<HTMLElement>(".label")!.offsetTop - (panel as HTMLElement).offsetTop))));
+    expect(new Set(tops).size, `label tops ${tops}`).toBe(1);
+  });
+}

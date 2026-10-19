@@ -190,6 +190,8 @@ p { color: var(--muted); line-height: 1.62; font-size: 1rem; margin-bottom: 12px
   .card { min-height: calc(100vh - 16px - var(--stage-bottom) - var(--below)); min-height: calc(100svh - 16px - var(--stage-bottom) - var(--below)); }
   /* Tighter gaps in front, so it fits that height with the button under it. */
   .front { row-gap: 12px; }
+  /* Each panel starts at the top, as on a phone held upright, so the label stays put from one panel to the next. */
+  .panel { justify-content: flex-start; }
   .front .links { margin-top: 4px; }
   h1 { font-size: 2rem; }
   :root { --pad-y: 22px; }
