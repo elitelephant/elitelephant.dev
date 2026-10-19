@@ -130,8 +130,8 @@ p { color: var(--muted); line-height: 1.62; font-size: 1rem; margin-bottom: 12px
 .panel.say-hi { justify-content: safe center; }
 .say-hi .say { font-size: calc(2.75rem * var(--fit, 1)); font-weight: 600; line-height: 1.04; letter-spacing: -.025em; color: var(--text);
   margin-bottom: calc(22px * var(--fit, 1)); }
-.say-hi .links { font-size: calc(1rem * var(--fit, 1)); }
 .story p { font-size: calc(.9375rem * var(--fit, 1)); line-height: 1.55; margin-bottom: calc(10px * var(--fit, 1)); }
+/* The links under "Say hi.", the size of the front's. */
 .panel .links { font-size: calc(.9375rem * var(--fit, 1)); }
 /* Before the text shrinks, the spacing tightens (data-tight). */
 .panels[data-tight] { --panel-top: 22px; }
