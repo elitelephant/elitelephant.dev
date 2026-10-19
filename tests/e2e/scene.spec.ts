@@ -129,6 +129,16 @@ for (const [quality, bubbles] of [["medium", "44"], ["high", "64"]] as const) {
   });
 }
 
+// three.js warns that Clock is deprecated whenever React Three Fiber builds its clock; the site drops that one warning.
+test("the scene loads without three.js's Clock warning", async ({ page }) => {
+  const warnings: string[] = [];
+  page.on("console", (m) => {
+    if (m.type() === "warning") warnings.push(m.text());
+  });
+  await sceneReady(page, "/?quality=medium&lock");
+  expect(warnings.filter((w) => w.includes("THREE.Clock"))).toEqual([]);
+});
+
 test("the scene fades in over the static rings", async ({ page }) => {
   await page.goto("/?quality=medium&lock");
   const opacity = () => page.locator(".scene").evaluate((el) => Number(getComputedStyle(el).opacity));

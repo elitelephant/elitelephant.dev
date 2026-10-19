@@ -2,11 +2,19 @@
 
 import { Canvas } from "@react-three/fiber";
 import { useState } from "react";
+import { setConsoleFunction } from "three";
 import { BUBBLES, MAX_DPR } from "@/lib/quality";
 import type { LiveTier, Step } from "@/lib/quality-monitor";
 import { CAM_Z, FOV } from "./layout";
 import { Upkeep } from "./Upkeep";
 import { World } from "./World";
+
+// React Three Fiber 9.8 builds its clock with THREE.Clock, and three.js warns on every load that Clock is deprecated.
+// The warning is about the library, not this site, so only that message is dropped; every other one reaches the console.
+setConsoleFunction((type, message, ...params) => {
+  if (type === "warn" && message.startsWith("THREE.Clock: This module has been deprecated")) return;
+  console[type](message, ...params);
+});
 
 type Props = { tier: LiveTier; canRise: boolean; lock: boolean; onStep: (step: Step) => void };
 
