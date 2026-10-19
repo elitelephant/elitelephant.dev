@@ -55,8 +55,12 @@ html[data-tall] .stage, .stage:has(> .notfound) { overflow-y: auto; }
 .card { position: relative; display: grid; transform-style: preserve-3d; pointer-events: auto; will-change: transform;
   min-height: min(456px, calc(100vh - 16px - var(--stage-bottom) - var(--below)));
   min-height: min(456px, calc(100svh - 16px - var(--stage-bottom) - var(--below))); }
+/* The card stock is laid paper held up to the light: the card's colour is painted through a mask that thins it along a
+   line every 6 px and a chain line every 48 px, so the page and its bubbles show faintly through them, with fine light
+   specks on top. Centred, so the narrower columns at the edges match. Inline, so the card never shows without it. */
 .face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
-  border-radius: var(--radius); background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--radius); border: 1px solid var(--line);
+  background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='288' height='288'><mask id='k'><rect width='288' height='288' fill='%23fff'/><pattern id='l' width='6' height='6' patternUnits='userSpaceOnUse'><rect width='6' height='1' fill='%23000' opacity='.12'/></pattern><rect width='288' height='288' fill='url(%23l)'/><pattern id='c' width='48' height='6' patternUnits='userSpaceOnUse'><rect width='1' height='6' fill='%23000' opacity='.18'/></pattern><rect width='288' height='288' fill='url(%23c)'/></mask><rect width='288' height='288' fill='%230b100e' mask='url(%23k)'/><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' seed='1' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 1.4 0 0 0 -.6'/></filter><rect width='288' height='288' filter='url(%23g)' opacity='.22'/></svg>") center top / 288px 288px;
   box-shadow: 0 30px 80px -30px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.02) inset; }
 
 /* Greeting, headline and links as one block in the middle of the card, left-aligned. */

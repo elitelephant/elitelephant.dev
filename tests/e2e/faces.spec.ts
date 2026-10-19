@@ -5,7 +5,7 @@ import { expectAngle, moveAway, text } from "./helpers";
 // Headless WebKit draws the turned card in software at about 10 fps, so the spring takes several seconds to settle.
 const SLOW = 30_000;
 
-const style = (page: Page, selector: string, prop: "opacity" | "backgroundColor") =>
+const style = (page: Page, selector: string, prop: "opacity" | "backgroundColor" | "backgroundImage") =>
   page.locator(selector).evaluate((el, p) => getComputedStyle(el)[p], prop);
 
 // WebKit ignores backface-visibility, even on a bare two-face card, and shows the other face mirrored through.
@@ -27,11 +27,13 @@ test("only the face looking at you can be seen", async ({ page }, testInfo) => {
   expect(await style(page, "#back", "opacity")).toBe("0");
 });
 
-test("on a phone the back is as dark and opaque as the front", async ({ page }) => {
+// Both faces are the same card stock, painted in the card's colour: on a phone the back is no lighter or clearer.
+test("on a phone the back is the same card stock as the front", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/?quality=low");
-  expect(await style(page, "#front", "backgroundColor")).toBe("rgb(11, 16, 14)");
-  expect(await style(page, "#back", "backgroundColor")).toBe("rgb(11, 16, 14)");
+  const front = await style(page, "#front", "backgroundImage");
+  expect(front).toContain("%230b100e");
+  expect(await style(page, "#back", "backgroundImage")).toBe(front);
 });
 
 // The flip button stays under the card while it turns. Its label switches with the face, edge-on, where neither face
