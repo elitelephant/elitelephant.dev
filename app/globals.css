@@ -34,6 +34,8 @@ a { color: var(--mint); text-decoration: none; text-underline-offset: 3px; }
   a:hover { text-decoration: underline; }
 }
 :focus-visible { outline: 2px solid var(--mint); outline-offset: 3px; border-radius: 6px; }
+/* Selected text in the site's own colours, rather than the browser's blue. */
+::selection { background: var(--mint); color: var(--card); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* The 3D scene sits behind the card; bubbles are grabbed on the canvas itself. It shows once its first frame is

@@ -43,6 +43,20 @@ test.describe("in high contrast", () => {
   });
 });
 
+// Selected text takes the site's colours instead of the browser's blue: the card's dark on mint.
+test("selected text is dark on mint", async ({ page }) => {
+  await page.goto("/?quality=low");
+  const { selection, mint, card } = await page.evaluate(() => {
+    const s = getComputedStyle(document.querySelector("h1")!, "::selection");
+    return {
+      selection: [s.backgroundColor, s.color],
+      mint: getComputedStyle(document.querySelector("h1 .now")!).color,
+      card: getComputedStyle(document.querySelector("[data-flip]")!).backgroundColor,
+    };
+  });
+  expect(selection).toEqual([mint, card]);
+});
+
 test("the 404 page", async ({ page }) => {
   const response = await page.goto("/nothing-here");
   expect(response?.status()).toBe(404);
