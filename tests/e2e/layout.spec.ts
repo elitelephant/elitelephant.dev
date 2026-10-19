@@ -114,6 +114,25 @@ for (const [width, height] of SIZES) {
   });
 }
 
+// An iPhone with no home button keeps its home indicator clear under the stage: on its side that inset is 21 px, more
+// than the stage's usual 16, and the card gives up the difference. Chromium only: it can set the safe-area insets.
+test("on an iPhone on its side, the card and the button fit above the home indicator", async ({ page }) => {
+  await page.setViewportSize({ width: 844, height: 390 });
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, left: 47, right: 47, bottom: 21 } });
+  await page.goto("/?quality=low");
+  await page.evaluate(() => document.fonts.ready);
+  const { padding, over } = await page.evaluate(() => {
+    const stage = document.querySelector<HTMLElement>(".stage")!;
+    const style = getComputedStyle(stage);
+    const room = stage.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+    return { padding: style.paddingBottom, over: document.querySelector<HTMLElement>(".deck")!.offsetHeight - room };
+  });
+  expect(padding, "the stage keeps the indicator's inset").toBe("21px");
+  expect(over).toBeLessThanOrEqual(0.5);
+  await expect(page.locator("html")).not.toHaveAttribute("data-tall");
+});
+
 // On the common large phones, tablets and desktops the back's text keeps its full size: the spacing gives way first.
 for (const [width, height] of [[390, 844], [414, 896], [430, 932], [768, 1024], [1280, 800]] as const) {
   test(`the back's text keeps its size at ${width}x${height}`, async ({ page }) => {
