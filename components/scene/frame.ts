@@ -65,11 +65,14 @@ function stripSeat(b: Ball, { box, room, free, halfW }: Layout, l: number, out: 
   const side = SIDES[i];
   const f = s / weight[i];
   // Sizes as the camera sees them at this seat's depth, so the bubble stays on screen however near it sits, with
-  // room for a breath to lean it out.
+  // room for a breath to lean it out. A bubble wider than its strip (a short phone upright) sits across it instead,
+  // partly behind the card and past the screen's edge.
   const z = FRAME_Z[0] + (FRAME_Z[1] - FRAME_Z[0]) * b.depth;
   const r = b.r * (CAM_Z / (CAM_Z - z));
   const near = STRIP_GAP + r;
-  const m = near + (Math.max(near, room[side] - r - BREATH_LEAN) - near) * b.depth;
+  const m = near > room[side] - r + 1e-6
+    ? room[side] * (0.35 + 0.3 * b.depth)
+    : near + (Math.max(near, room[side] - r - BREATH_LEAN) - near) * b.depth;
   const x = (v: number) => Math.max(-halfW + r, Math.min(halfW - r, v));
   const y = (v: number) => Math.max(-HALF_H + r, Math.min(HALF_H - r, v));
   if (side === "top") out.set(x(box.left - m + f * (across + 2 * m)), box.top + m + l, 0);

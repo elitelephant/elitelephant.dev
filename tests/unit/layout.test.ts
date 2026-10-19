@@ -16,9 +16,9 @@ test("each screen gets the right frame shape and bubble size", () => {
     assert.equal(layout(k).shape, "strip", k);
     assert.equal(layout(k).scale, 0.8, k);
   }
-  // 64 px above and below the card: bubbles shrink to fit there.
+  // 36 px above the card and under the button: thinner than a bubble that still reads as one.
   assert.equal(layout("smallPhone").shape, "strip");
-  assert.ok(layout("smallPhone").scale < 0.8, `small phone scale ${layout("smallPhone").scale}`);
+  assert.equal(layout("smallPhone").scale, 0.7);
 });
 
 // A point projected onto z = 0, the plane the card lives in, and how big a sphere there looks from the camera.
@@ -29,7 +29,10 @@ const clearOf = (box: Box, p: Vector3, r: number) =>
 const seats = (layout: Layout, count: number, lean = 0) =>
   makeBalls(layout, count).map((b) => ({ b, p: frameTarget(b, layout, lean, new Vector3()) }));
 
-for (const [name, c] of Object.entries(CARDS)) {
+// Where the strips have room for the bubbles; a short phone's are thinner than a bubble (see below).
+const ROOMY = Object.entries(CARDS).filter(([name]) => name !== "smallPhone");
+
+for (const [name, c] of ROOMY) {
   // A breath leans a bubble out as it swells and in as it shrinks, so leaning in is the close call.
   test(`${name}: no seat in the frame touches the card, at either end of a breath`, () => {
     const layout = computeLayout(c.view, c.card);
@@ -61,7 +64,7 @@ for (const [name, c] of Object.entries(CARDS)) {
 }
 
 // Where the screen leaves room on one or two sides only, the frame goes there, and none of it is lost off screen.
-for (const name of ["tablet", "phone", "smallPhone", "landscape"] as const) {
+for (const name of ["tablet", "phone", "landscape"] as const) {
   test(`${name}: every seat in the frame is on screen`, () => {
     const layout = computeLayout(CARDS[name].view, CARDS[name].card);
     for (const { b, p } of seats(layout, 44)) {
@@ -71,6 +74,17 @@ for (const name of ["tablet", "phone", "smallPhone", "landscape"] as const) {
     }
   });
 }
+
+// A short phone upright leaves strips thinner than a bubble: the bubbles keep their size and sit across the strip,
+// partly behind the card and past the screen's edge, rather than shrink to dots.
+test("smallPhone: the frame's bubbles sit across the thin strips", () => {
+  const layout = computeLayout(CARDS.smallPhone.view, CARDS.smallPhone.card);
+  for (const { p } of seats(layout, 44)) {
+    const s = onScreen(p);
+    const inStrip = (s.y > layout.box.top && s.y < HALF_H) || (s.y < layout.box.bottom && s.y > -HALF_H);
+    assert.ok(inStrip && Math.abs(s.x) < layout.halfW, `a seat's middle at ${s.x.toFixed(2)}, ${s.y.toFixed(2)} is outside the strips`);
+  }
+});
 
 test("phones and tablets: the frame splits between above and below the card", () => {
   for (const name of ["tablet", "phone", "smallPhone"] as const) {

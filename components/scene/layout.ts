@@ -10,6 +10,9 @@ export const OPEN_ROOM = 0.65;
 export const STRIP_GAP = 0.35; // in a strip, the nearest a bubble sits to the card
 const R_MAX = 0.78; // the largest bubble's radius at scale 1 (see makeBalls)
 const NEAR = CAM_Z / (CAM_Z - 0.5); // how much bigger the nearest seats look
+// Under this the rings read as dots, not bubbles. A strip thinner than that (a short phone upright) keeps the bubbles
+// at this size; they pass behind the card and past the screen's edge instead (see stripSeat in ./frame).
+const MIN_STRIP_SCALE = 0.7;
 
 export type Box = { left: number; right: number; top: number; bottom: number };
 export type Side = "top" | "right" | "bottom" | "left";
@@ -37,11 +40,12 @@ export function computeLayout(view: View, card: CardRect): Layout {
   // counting it would turn the side strips into a ring and hide most of the front's bubbles behind the card.
   const free = { ...room, bottom: room.bottom - (card.below ?? 0) * unit };
   const open = Object.values(free).filter((r) => r > OPEN_ROOM).length;
-  // Rings need a few cells per bubble to read as bubbles, so small screens keep them fairly big, as long as the
-  // largest one still fits the thinnest strip.
+  // Rings need a few cells per bubble to read as bubbles, so small screens keep them fairly big: as big as the thinnest
+  // strip holds, up to 0.8, and never under MIN_STRIP_SCALE.
   if (open < 3) {
     const thinnest = Math.min(...Object.values(free).filter((r) => r > OPEN_ROOM));
-    return { halfW, box, room, free, scale: Math.min(0.8, (thinnest - STRIP_GAP) / (2 * R_MAX * NEAR)), shape: "strip" };
+    const fits = (thinnest - STRIP_GAP) / (2 * R_MAX * NEAR);
+    return { halfW, box, room, free, scale: Math.max(MIN_STRIP_SCALE, Math.min(0.8, fits)), shape: "strip" };
   }
   const side = Math.min(room.left, room.right);
   return { halfW, box, room, free, scale: side > 2.2 ? Math.min(1, side / 4.2) : 0.7, shape: "around" };
