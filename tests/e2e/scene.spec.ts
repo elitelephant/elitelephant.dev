@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { expectAngle, loadWithTier, moveAway, text, threeLoaded } from "./helpers";
+import { expectAngle, loadWithTier, moveAway, setTextSize, text, threeLoaded } from "./helpers";
 
 // One WebGL page at a time: on SwiftShader the CPU draws every frame, and parallel pages starve each other. The
 // tests run in order in one worker; unlike serial mode, a failure doesn't skip the ones after it.
@@ -360,17 +360,32 @@ test("with the back showing, a resize frames the new card", async ({ page }) => 
 
 // The bubbles are laid out around the card as the scene measures it, which has to be where the page draws it. Measured
 // from the wrong corner, the front's bubbles ring the real card and the frame forms around an empty spot.
+// Where the page draws the card, in the scene's data-scene-card format.
+const drawnCard = (page: Page) => page.locator("#card").evaluate((el) => {
+  const r = el.getBoundingClientRect();
+  return [r.x, r.y, r.width, r.height].map(Math.round).join(" ");
+});
+
 test("the scene measures the card where the page draws it", async ({ page }) => {
-  const drawn = () => page.locator("#card").evaluate((el) => {
-    const r = el.getBoundingClientRect();
-    return [r.x, r.y, r.width, r.height].map(Math.round).join(" ");
-  });
+  const drawn = () => drawnCard(page);
   await page.setViewportSize({ width: 1280, height: 800 });
   await sceneReady(page, "/?quality=medium&lock");
   await expect(html(page)).toHaveAttribute("data-scene-card", await drawn());
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(html(page)).toHaveAttribute("data-scene-shape", "strip", { timeout: 10_000 });
   await expect(html(page)).toHaveAttribute("data-scene-card", await drawn());
+});
+
+// The card can change size with the window untouched: the reader sets a larger text size, or a font arrives late.
+// The scene measures it again, so the frame sits around the card the page draws.
+test("the scene measures the card again when it grows without a resize", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await sceneReady(page, "/?quality=medium&lock");
+  const before = await drawnCard(page);
+  await expect(html(page)).toHaveAttribute("data-scene-card", before);
+  await setTextSize(page, 32);
+  await expect.poll(() => drawnCard(page), { message: "the card grows" }).not.toBe(before);
+  await expect(html(page)).toHaveAttribute("data-scene-card", await drawnCard(page), { timeout: 10_000 });
 });
 
 // The page says the tab is hidden, or shows again. Here the page keeps running, so a scene that kept drawing while

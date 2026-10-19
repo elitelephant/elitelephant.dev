@@ -196,6 +196,11 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
   canvas.addEventListener("pointercancel", onUp);
 
   // ---------- Resize: keep the bubbles unless the layout really changed ----------
+  // The window resizing reaches here through World; the card and its button can also change size on their own (a
+  // larger text size, a font that arrives late), so their box is watched too.
+  const deck = (flipStore.get().cardEl ?? document.getElementById("card"))?.parentElement;
+  const deckWatch = new ResizeObserver(() => resize());
+  if (deck) deckWatch.observe(deck);
   let rebuildTimer = 0;
   function resize() {
     clearTimeout(rebuildTimer);
@@ -277,6 +282,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
     resize,
     dispose() {
       disposed = true;
+      deckWatch.disconnect();
       clearTimeout(rebuildTimer);
       unsubscribe();
       unkick();
