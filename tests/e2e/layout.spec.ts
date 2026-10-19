@@ -217,3 +217,29 @@ for (const [width, height] of [[320, 568], [360, 800], [375, 667]] as const) {
     expect(lines[1], "Now I’m building things.").toBeLessThanOrEqual(3);
   });
 }
+
+// No paragraph on the card ends with a word alone on its last line, front or back, on phones and on a desktop.
+for (const [width, height] of [[320, 568], [360, 800], [375, 667], [390, 844], [1280, 800]] as const) {
+  test(`no paragraph ends with one word on its last line at ${width}x${height}`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await page.goto("/?quality=low");
+    await page.evaluate(() => document.fonts.ready);
+    const alone = await page.locator("#card p").evaluateAll((paragraphs) => paragraphs.flatMap((p) => {
+      const words: { word: string; top: number }[] = [];
+      const range = document.createRange();
+      const walker = document.createTreeWalker(p, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        for (const m of node.textContent!.matchAll(/\S+/g)) {
+          range.setStart(node, m.index!);
+          range.setEnd(node, m.index! + m[0].length);
+          const rect = range.getClientRects()[0];
+          if (rect) words.push({ word: m[0], top: Math.round(rect.top) });
+        }
+      }
+      const last = Math.max(...words.map((w) => w.top));
+      const onLast = words.filter((w) => w.top === last);
+      return words.length > onLast.length && onLast.length === 1 ? [`${onLast[0].word} (${p.textContent!.slice(0, 40)}…)`] : [];
+    }));
+    expect(alone).toEqual([]);
+  });
+}

@@ -117,7 +117,8 @@ h1 .now { display: block; color: var(--mint); margin-top: .12em; }
 /* --fit, set on the panels (1 or less), shrinks the back's text until the longest panel fits without scrolling.
    Labels stop at 11 px, the smallest size Apple allows. */
 .label { font-size: max(.6875rem, calc(.75rem * var(--fit, 1))); font-weight: 500; color: var(--mint); letter-spacing: .12em; margin-bottom: calc(18px * var(--fit, 1)); text-transform: uppercase; }
-p { color: var(--muted); line-height: 1.62; font-size: 1rem; margin-bottom: 12px; max-width: 60ch; }
+/* pretty keeps a word from sitting alone on a paragraph's last line. */
+p { color: var(--muted); line-height: 1.62; font-size: 1rem; margin-bottom: 12px; max-width: 60ch; text-wrap: pretty; }
 .panel p { font-size: calc(1rem * var(--fit, 1)); margin-bottom: calc(12px * var(--fit, 1)); }
 /* The last panel: "Say hi." large over the links, in the middle of the card on every screen. */
 .panel.say-hi { justify-content: safe center; }
