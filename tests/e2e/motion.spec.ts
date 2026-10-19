@@ -101,4 +101,16 @@ test.describe("on a touch screen", () => {
     await page.getByRole("button", { name: text.flipBack }).tap();
     await expectAngle(page, 0);
   });
+
+  // A touch screen keeps :hover on what was tapped last, so coming back from a link's new tab it would still be
+  // underlined. The underline is for a mouse.
+  test("a tapped link doesn't stay underlined", async ({ page }) => {
+    await page.goto("/?quality=low");
+    const link = page.locator("#front .links a").first();
+    // The tap is what's being tested, not the new tab it opens.
+    await link.evaluate((a) => a.addEventListener("click", (e) => e.preventDefault()));
+    await link.tap();
+    expect(await link.evaluate((a) => a.matches(":hover")), "the tap leaves the link hovered").toBe(true);
+    expect(await link.evaluate((a) => getComputedStyle(a).textDecorationLine)).toBe("none");
+  });
 });

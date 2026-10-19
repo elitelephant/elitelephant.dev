@@ -29,7 +29,10 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-even
   background: url(/fallback/rings-wide.webp) center / cover no-repeat; opacity: 0; transition: opacity .7s ease; }
 html[data-backdrop="rings"]:not([data-scene="ready"]) body::before { opacity: 1; }
 a { color: var(--mint); text-decoration: none; text-underline-offset: 3px; }
-a:hover { text-decoration: underline; }
+/* Only where a pointer hovers: after a tap, a touch screen would keep the link underlined. */
+@media (hover: hover) {
+  a:hover { text-decoration: underline; }
+}
 :focus-visible { outline: 2px solid var(--mint); outline-offset: 3px; border-radius: 6px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
