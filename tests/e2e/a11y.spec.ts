@@ -20,6 +20,29 @@ for (const [width, height] of [[1280, 800], [390, 844]] as const) {
   });
 }
 
+// High contrast (Windows) swaps every colour for the system's. The dots are only a background, so without colours of
+// their own they'd turn into the system's background and vanish, and the back would no longer say it has more panels.
+test.describe("in high contrast", () => {
+  test.use({ forcedColors: "active" });
+  test("the dots take the system's colours, and the current one stands out", async ({ page }) => {
+    await page.goto("/?quality=low");
+    await turnOver(page);
+    const { canvas, dots } = await page.evaluate(() => {
+      const rgb = (c: string) => c.match(/[\d.]+/g)!.slice(0, 3).join(",");
+      const probe = document.body.appendChild(document.createElement("div"));
+      probe.style.backgroundColor = "Canvas";
+      const canvas = rgb(getComputedStyle(probe).backgroundColor);
+      probe.remove();
+      return {
+        canvas,
+        dots: [...document.querySelectorAll(".dots button")].map((b) => rgb(getComputedStyle(b, "::before").backgroundColor)),
+      };
+    });
+    expect(dots.filter((dot) => dot === canvas), "dots the system's background").toEqual([]);
+    expect(new Set(dots).size, "the current dot and the others").toBe(2);
+  });
+});
+
 test("the 404 page", async ({ page }) => {
   const response = await page.goto("/nothing-here");
   expect(response?.status()).toBe(404);

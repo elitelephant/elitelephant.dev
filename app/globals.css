@@ -136,6 +136,12 @@ p { color: var(--muted); line-height: 1.62; font-size: 1rem; margin-bottom: 12px
 .dots button:focus-visible { border-radius: 50%; }
 .dots button::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--faint); transition: background .2s, transform .2s; }
 .dots button[aria-current="true"]::before { background: var(--mint); transform: scale(1.4); }
+/* High contrast swaps every background for the system's, which would wipe out the dots: paint them in its text
+   colour, and the current one in its highlight. */
+@media (forced-colors: active) {
+  .dots button::before { forced-color-adjust: none; background: CanvasText; }
+  .dots button[aria-current="true"]::before { background: Highlight; }
+}
 .panels:focus-visible { outline-offset: -4px; border-radius: var(--radius); }
 
 .notfound { position: relative; inset: auto; place-self: center; width: min(460px, 100%); padding: var(--pad-y) var(--pad-x);
