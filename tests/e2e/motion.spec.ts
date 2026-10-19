@@ -68,6 +68,20 @@ test.describe("with motion", () => {
     }).toBe(0);
   });
 
+  // Under the mouse the flip button's fill fades in along with its border, instead of switching on at once. The
+  // transitions are caught as they start, so a slow machine can't miss them.
+  test("the flip button's fill fades in under the mouse", async ({ page }) => {
+    await page.goto("/?quality=low");
+    const button = page.locator("[data-flip]");
+    const rest = await button.evaluate((el) => {
+      el.addEventListener("transitionrun", (e) => (el.dataset.fading = `${el.dataset.fading ?? ""} ${(e as TransitionEvent).propertyName}`));
+      return getComputedStyle(el).backgroundColor;
+    });
+    await button.hover();
+    await expect.poll(() => button.getAttribute("data-fading")).toContain("background-color");
+    await expect.poll(() => button.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe(rest);
+  });
+
   // A dot under the mouse lights up, so it reads as something to click; the current one keeps its mint.
   test("a dot lights up under the mouse", async ({ page }) => {
     await page.goto("/?quality=low");
@@ -97,6 +111,7 @@ test.describe("on a touch screen", () => {
 
   test("a touch doesn't tilt the card, and a tap on the button turns it", async ({ page }) => {
     await page.goto("/?quality=low");
+    const unlit = await page.locator("[data-flip]").evaluate((el) => getComputedStyle(el).backgroundColor);
     const card = (await page.locator("#card").boundingBox())!;
     const at = (fx: number, fy: number) => ({ x: card.x + card.width * fx, y: card.y + card.height * fy });
     // A finger dragged across the card, as touch events (Playwright's tap alone moves no pointer).
@@ -114,7 +129,7 @@ test.describe("on a touch screen", () => {
     await expectAngle(page, 180);
     expect((await cardTransform(page)).tilt).toBe(0);
     // The button stays under the card, and the finger that tapped it leaves it unlit: its hover is for a mouse.
-    expect(await page.locator("[data-flip]").evaluate((el) => getComputedStyle(el).backgroundImage)).toBe("none");
+    expect(await page.locator("[data-flip]").evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(unlit);
     await page.getByRole("button", { name: text.flipBack }).tap();
     await expectAngle(page, 0);
   });
