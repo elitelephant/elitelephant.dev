@@ -21,6 +21,9 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
+      # In the container the checkout belongs to another user, so git refuses to read it once checkout's own
+      # temporary setting is gone; the reference test lists the repo's files with git.
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
