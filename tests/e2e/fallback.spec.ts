@@ -25,3 +25,10 @@ test("phones in portrait get the tall rings", async ({ page }) => {
   const rings = await page.evaluate(() => getComputedStyle(document.body, "::before").backgroundImage);
   expect(rings).toContain("/fallback/rings-tall.webp");
 });
+
+// The 404 never gets the scene: it shows the static rings with JavaScript, as it does without.
+test("the 404 shows the static rings", async ({ page }) => {
+  const response = await page.goto("/no-such-page");
+  expect(response?.status()).toBe(404);
+  expect(await ringsShown(page)).toBe(1);
+});

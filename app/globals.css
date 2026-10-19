@@ -28,6 +28,8 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); over
 body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background: url(/fallback/rings-wide.webp) center / cover no-repeat; opacity: 0; transition: opacity .7s ease; }
 html[data-backdrop="rings"]:not([data-scene="ready"]) body::before { opacity: 1; }
+/* The 404 never gets the scene, so it shows the rings from the start, as it does without JavaScript. */
+body:has(.notfound)::before { opacity: 1; }
 a { color: var(--mint); text-decoration: none; text-underline-offset: 3px; }
 /* Only where a pointer hovers: after a tap, a touch screen would keep the link underlined. */
 @media (hover: hover) {
