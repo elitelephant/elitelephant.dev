@@ -64,6 +64,39 @@ test("selected text is dark on mint", async ({ page }) => {
   expect(selection).toEqual([mint, card]);
 });
 
+// The card is printed on paper, an image, so axe can't tell the text's contrast over it and leaves it unchecked.
+// Measured here instead, in the lightest case: plain mint behind the see-through lines, no rings. On 99 % of the
+// paper, muted text keeps 4.5:1 or more; only stray light specks fall below.
+test("muted text keeps 4.5:1 over the card's paper", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/?quality=low");
+  const muted = await page.locator("#front .hi").evaluate((el) => getComputedStyle(el).color);
+  await page.addStyleTag({ content: "body::before { display: none !important; } #front * { color: transparent !important; }" });
+  const card = (await page.locator("#front").boundingBox())!;
+  const shot = await page.screenshot({ clip: { x: card.x + 40, y: card.y + 40, width: card.width - 80, height: card.height - 80 } });
+  const ratio = await page.evaluate(async ({ png, muted }) => {
+    const img = new Image();
+    img.src = `data:image/png;base64,${png}`;
+    await img.decode();
+    const canvas = Object.assign(document.createElement("canvas"), { width: img.width, height: img.height });
+    const g = canvas.getContext("2d")!;
+    g.drawImage(img, 0, 0);
+    const px = g.getImageData(0, 0, img.width, img.height).data;
+    const lum = (rgb: number[]) => {
+      const [r, gr, b] = rgb.map((c) => (c / 255 <= 0.03928 ? c / 255 / 12.92 : ((c / 255 + 0.055) / 1.055) ** 2.4));
+      return 0.2126 * r + 0.7152 * gr + 0.0722 * b;
+    };
+    const paper: number[][] = [];
+    for (let i = 0; i < px.length; i += 4) paper.push([px[i], px[i + 1], px[i + 2]]);
+    paper.sort((a, b) => lum(a) - lum(b));
+    const light = paper[Math.floor(paper.length * 0.99)];
+    const [r, gr, b, a] = muted.match(/[\d.]+/g)!.map(Number);
+    const text = [r, gr, b].map((c, i) => c * a + light[i] * (1 - a));
+    return (lum(text) + 0.05) / (lum(light) + 0.05);
+  }, { png: shot.toString("base64"), muted });
+  expect(ratio, `${ratio.toFixed(2)}:1 on 99 % of the paper`).toBeGreaterThanOrEqual(4.5);
+});
+
 test("the 404 page", async ({ page }) => {
   const response = await page.goto("/nothing-here");
   expect(response?.status()).toBe(404);
