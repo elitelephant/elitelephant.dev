@@ -66,13 +66,15 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
   let still = false; // reduced motion: positions are worked out once per change, then left alone
 
   // Offsets ignore the card's turn and tilt. They're summed up to the fixed stage, because the card's own offset
-  // parent (the box with the perspective) doesn't start at the screen's corner.
+  // parent (the box with the perspective) doesn't start at the screen's corner. Less what each parent has scrolled:
+  // a card taller than the screen scrolls the stage, and the frame follows it there.
   const onPage = (el: HTMLElement) => {
     let x = 0;
     let y = 0;
     for (let n: HTMLElement | null = el; n; n = n.offsetParent as HTMLElement | null) {
-      x += n.offsetLeft;
-      y += n.offsetTop;
+      const parent = n.offsetParent as HTMLElement | null;
+      x += n.offsetLeft - (parent?.scrollLeft ?? 0);
+      y += n.offsetTop - (parent?.scrollTop ?? 0);
     }
     return { x, y };
   };
@@ -210,10 +212,13 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
 
   // ---------- Resize: keep the bubbles unless the layout really changed ----------
   // The window resizing reaches here through World; the card and its button can also change size on their own (a
-  // larger text size, a font that arrives late), so their box is watched too.
+  // larger text size, a font that arrives late), so their box is watched too. A card taller than the screen also
+  // moves when the stage scrolls.
   const deck = (flipStore.get().cardEl ?? document.getElementById("card"))?.parentElement;
   const deckWatch = new ResizeObserver(() => resize());
   if (deck) deckWatch.observe(deck);
+  const stage = deck?.parentElement;
+  stage?.addEventListener("scroll", resize, { passive: true });
   let rebuildTimer = 0;
   function resize() {
     clearTimeout(rebuildTimer);
@@ -308,6 +313,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
     dispose() {
       disposed = true;
       deckWatch.disconnect();
+      stage?.removeEventListener("scroll", resize);
       clearTimeout(rebuildTimer);
       unsubscribe();
       unkick();

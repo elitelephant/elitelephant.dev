@@ -416,6 +416,18 @@ test("the scene measures the card again when it grows without a resize", async (
   await expect(html(page)).toHaveAttribute("data-scene-card", await drawnCard(page), { timeout: 10_000 });
 });
 
+// A card taller than the screen (a large text size, or a page zoomed to 300 %) scrolls the stage. The scene measures
+// the card where the scroll leaves it, so the frame doesn't stay where the card was.
+test("the scene follows a card taller than the screen as the page scrolls", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 640 });
+  await sceneReady(page, "/?quality=medium&lock");
+  await setTextSize(page, 32);
+  await expect(html(page)).toHaveAttribute("data-tall", "");
+  await page.locator(".stage").evaluate((stage) => stage.scrollTo(0, 200));
+  await expect.poll(() => page.locator(".stage").evaluate((stage) => stage.scrollTop)).toBeGreaterThan(100);
+  await expect(html(page)).toHaveAttribute("data-scene-card", await drawnCard(page), { timeout: 10_000 });
+});
+
 // The page says the tab is hidden, or shows again. Here the page keeps running, so a scene that kept drawing while
 // "hidden" would be seen doing it.
 const setHidden = (page: Page, hidden: boolean) => page.evaluate((hidden) => {
