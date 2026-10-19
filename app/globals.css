@@ -66,7 +66,10 @@ html[data-tall] .stage, .stage:has(> .notfound) { overflow-y: auto; }
   min-height: min(456px, calc(100svh - 16px - var(--stage-bottom) - var(--below))); }
 /* The card stock is laid paper held up to the light: the card's colour is painted through a mask that thins it along a
    line every 6 px and a chain line every 48 px, so the page and its bubbles show faintly through them, with fine light
-   specks on top. Centred, so the narrower columns at the edges match. Inline, so the card never shows without it. */
+   specks on top. Centred, so the narrower columns at the edges match. Inline, so the card never shows without it.
+   The tile is 288 px, a multiple of both 6 and 48, so it repeats without a seam. The lines take .12 of the card's
+   colour away and the chain lines .18; the specks are white at .22. Muted text stays above 4.5:1 on all but stray
+   specks (5.3:1 on 99 % of the paper, with plain mint behind). */
 .face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
   border-radius: var(--radius); border: 1px solid var(--line);
   background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='288' height='288'><mask id='k'><rect width='288' height='288' fill='%23fff'/><pattern id='l' width='6' height='6' patternUnits='userSpaceOnUse'><rect width='6' height='1' fill='%23000' opacity='.12'/></pattern><rect width='288' height='288' fill='url(%23l)'/><pattern id='c' width='48' height='6' patternUnits='userSpaceOnUse'><rect width='1' height='6' fill='%23000' opacity='.18'/></pattern><rect width='288' height='288' fill='url(%23c)'/></mask><rect width='288' height='288' fill='%230b100e' mask='url(%23k)'/><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' seed='1' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 1.4 0 0 0 -.6'/></filter><rect width='288' height='288' filter='url(%23g)' opacity='.22'/></svg>") center top / 288px 288px;
