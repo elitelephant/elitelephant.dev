@@ -148,6 +148,10 @@ p { color: var(--muted); line-height: 1.62; font-size: 1rem; margin-bottom: 12px
   .panel h3 { font-size: calc(1.3125rem * var(--fit, 1)); margin-bottom: calc(8px * var(--fit, 1)); }
   .panel .say { font-size: calc(1.5rem * var(--fit, 1)); margin: calc(16px * var(--fit, 1)) 0 calc(10px * var(--fit, 1)); }
 }
+/* Under about 330 px, "watching from" no longer fits one line and "from" would sit alone: a slightly smaller headline. */
+@media (max-width: 340px) {
+  h1 { font-size: clamp(1.875rem, .375rem + 8.4vw, 2.75rem); }
+}
 @media (max-width: 760px) and (orientation: portrait) {
   body { background: var(--bg) url(/fallback/rings-tall.webp) center / cover no-repeat; }
 }

@@ -186,3 +186,28 @@ test("with the back showing, a resize keeps the panel and fits the text again", 
     underCard((await boxes(page, "[data-flip]"))[0], card, { top: 0, left: 0, right: width, bottom: height }, `flip button at ${width}x${height}`);
   }
 });
+
+// On the narrowest phones the headline's first sentence breaks in three lines, never leaving "from" alone on one.
+for (const [width, height] of [[320, 568], [360, 800], [375, 667]] as const) {
+  test(`each sentence of the headline takes three lines at most at ${width}x${height}`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await page.goto("/?quality=low");
+    await page.evaluate(() => document.fonts.ready);
+    const lines = await page.locator("#front h1").evaluate((h1) => {
+      const words = (node: Node) => {
+        const tops = new Set<number>();
+        const range = document.createRange();
+        const textNode = [...node.childNodes].find((n) => n.nodeType === Node.TEXT_NODE && n.textContent!.trim())!;
+        for (const m of textNode.textContent!.matchAll(/\S+/g)) {
+          range.setStart(textNode, m.index!);
+          range.setEnd(textNode, m.index! + m[0].length);
+          tops.add(Math.round(range.getBoundingClientRect().top));
+        }
+        return tops.size;
+      };
+      return [words(h1), words(h1.querySelector(".now")!)];
+    });
+    expect(lines[0], "I spent years watching from the sidelines.").toBeLessThanOrEqual(3);
+    expect(lines[1], "Now I’m building things.").toBeLessThanOrEqual(3);
+  });
+}
