@@ -16,6 +16,8 @@ for (const [width, height] of [[1280, 800], [390, 844]] as const) {
     await expect(page.getByRole("heading", { level: 2, name: site.back.panels[0].label })).toBeVisible();
     await expect(page.getByRole("heading", { level: 3, name: site.back.panels[0].title })).toBeVisible();
     await expect(page.locator("#back")).toHaveAccessibleName(site.card.backLabel);
+    // The scrolling panels take the focus as the card turns; as a named region, screen readers announce their name.
+    await expect(page.getByRole("region", { name: site.back.panelsLabel })).toBeFocused();
   });
 }
 

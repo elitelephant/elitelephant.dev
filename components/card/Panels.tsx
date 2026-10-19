@@ -157,7 +157,8 @@ export function Panels({ label, dotsLabel, sections, children }: Props) {
 
   return (
     <>
-      <div className="panels" id="panels" ref={boxRef} tabIndex={0} aria-label={label}>
+      {/* A scrolling area that takes focus needs a role, or screen readers may not announce its name. */}
+      <div className="panels" id="panels" ref={boxRef} tabIndex={0} role="region" aria-label={label}>
         {children}
       </div>
       <ul className="dots" aria-label={dotsLabel}>
