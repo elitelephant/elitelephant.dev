@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useRef, type RefObject } from "react";
-import { flipStore } from "@/lib/flip-store";
-import { TILT, atRest, pastEdge, step } from "@/lib/spring";
+// Relative paths, so plain Node can load this file for its unit tests.
+import { flipStore } from "../../lib/flip-store.ts";
+import { TILT, atRest, pastEdge, step } from "../../lib/spring.ts";
 
 const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 // Drives the card's transform outside React: one rAF loop that sleeps when the card is at rest.
-function createFlip(card: HTMLElement) {
+export function createFlip(card: HTMLElement) {
   let spring = { angle: 0, vel: 0 };
   let target = 0;
   let tilt = { x: 0, y: 0 };
@@ -77,7 +78,8 @@ function createFlip(card: HTMLElement) {
     setTarget(next: number) {
       if (next === target) return;
       target = next;
-      crossed = false;
+      // A turn taken back before edge-on is already on its target's side: there's no edge left to pass.
+      crossed = pastEdge(spring.angle, target);
       if (reducedMotion()) {
         cancelAnimationFrame(raf);
         raf = 0;
