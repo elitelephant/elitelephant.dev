@@ -147,16 +147,17 @@ async function inkAboveCard(page: Page) {
 }
 
 // A page that gets the scene starts on plain mint, without the static rings, and its bubbles grow in where they live,
-// so two sets of bubbles that don't match never show at once.
+// so two sets of bubbles that don't match never show at once. The page's clock moves 1/30 s per frame, so the growth
+// takes the same number of frames however slowly this machine draws them.
 test("with the scene, the page starts on plain mint and the bubbles grow in", async ({ page }) => {
+  await frameRate(page, 30);
   await page.goto("/?quality=medium&lock");
   await expect(html(page)).toHaveAttribute("data-scene", "ready", { timeout: 20_000 });
-  const early = await inkAboveCard(page);
+  await expect(html(page)).toHaveAttribute("data-scene-growth", "growing");
   await expect(page.locator(".scene")).toHaveCSS("opacity", "1");
   expect(await ringsShown(page), "static rings").toBe(0);
-  await page.waitForTimeout(2_500);
-  const late = await inkAboveCard(page);
-  expect(early, `ink above the card: ${early} at first, ${late} once grown`).toBeLessThan(late * 0.5);
+  await expect(html(page)).toHaveAttribute("data-scene-growth", "done", { timeout: SLOW });
+  expect(await inkAboveCard(page), "bubbles above the card once grown").toBeGreaterThan(0.01);
 });
 
 test("?debug shows the tier, the bubbles and the frame rate", async ({ page }) => {
@@ -521,6 +522,7 @@ test.describe("with reduced motion", () => {
 
   test("the bubbles are there at once, without growing in", async ({ page }) => {
     await sceneReady(page, "/?quality=medium&lock");
+    await expect(html(page)).toHaveAttribute("data-scene-growth", "done");
     const first = await inkAboveCard(page);
     await page.waitForTimeout(2_500);
     const later = await inkAboveCard(page);

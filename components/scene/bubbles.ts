@@ -267,7 +267,10 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
           if (g < 1) full = false;
           meshes[i].scale.setScalar(balls[i].r * (1 + breath(balls[i], motionTime, breathAmount) * BREATH_SCALE) * Math.max(1e-4, inflate(g)));
         }
-        grown ||= full;
+        if (full && !grown) {
+          grown = true;
+          root.dataset.sceneGrowth = "done";
+        }
       }
     }
     rings.render(scene, camera);
@@ -281,6 +284,8 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
   build();
   root.dataset.sceneMode = mode;
   root.dataset.sceneMotion = "moving";
+  // For tests: whether the bubbles are still growing in. With reduced motion they are there from the start.
+  root.dataset.sceneGrowth = reduce ? "done" : "growing";
   root.dataset.bubbles = String(count);
 
   // Nothing is drawn until the shaders are compiled; the first frame then sets data-scene="ready", which shows the
@@ -319,6 +324,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
       delete root.dataset.scene;
       delete root.dataset.sceneMode;
       delete root.dataset.sceneMotion;
+      delete root.dataset.sceneGrowth;
       delete root.dataset.sceneShape;
       delete root.dataset.sceneCard;
       delete root.dataset.bubbles;
