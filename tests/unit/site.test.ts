@@ -11,7 +11,6 @@ test("external links are https and the email link is mailto", () => {
 
 test("panels are building, story and offline, in that order", () => {
   assert.deepEqual(site.back.panels.map((p) => p.id), ["building", "story", "offline"]);
-  assert.deepEqual(site.back.panels.map((p) => p.number), ["01", "02", "03"]);
 });
 
 test("accessible names contain the visible text", () => {

@@ -187,6 +187,12 @@ test("with the back showing, a resize keeps the panel and fits the text again", 
   }
 });
 
+// The panels are headed by their name alone.
+test("the panel labels show only their name", async ({ page }) => {
+  await page.goto("/?quality=low");
+  for (const { id, label } of site.back.panels) await expect(page.locator(`#${id} .label`)).toHaveText(label);
+});
+
 // On the narrowest phones the headline's first sentence breaks in three lines, never leaving "from" alone on one.
 for (const [width, height] of [[320, 568], [360, 800], [375, 667]] as const) {
   test(`each sentence of the headline takes three lines at most at ${width}x${height}`, async ({ page }) => {

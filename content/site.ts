@@ -7,7 +7,6 @@ export type ContactLink =
 
 export type Panel = {
   id: "building" | "story" | "offline";
-  number: string;
   label: string;
   title?: string;
   paragraphs: readonly string[];
@@ -86,7 +85,6 @@ export const site = {
     panels: [
       {
         id: "building",
-        number: "01",
         label: "Building",
         title: "Encendidos",
         paragraphs: [
@@ -97,7 +95,6 @@ export const site = {
       },
       {
         id: "story",
-        number: "02",
         label: "Story",
         paragraphs: [
           "Most people know me as Santiago.",
@@ -108,7 +105,6 @@ export const site = {
       },
       {
         id: "offline",
-        number: "03",
         label: "Offline",
         paragraphs: [
           "I enjoy riding bikes. Tuesday mornings are for an early social ride that ends with coffee. I'm also getting into running.",
