@@ -30,6 +30,8 @@ Comments and commit messages make sense on their own: a unit test fails on decis
 
 The Vercel project `elitelephant` is connected to this repo. Every push to `main` builds a production deployment, and a Deployment Check holds it until the CI `verify` job passes; only then does it take `elitelephant.dev`. `www.elitelephant.dev` redirects (308) to the apex.
 
+Vercel Web Analytics and Speed Insights load only on the production deployment (`VERCEL_ENV`, in `app/layout.tsx`); local runs and previews send nothing. Both are switched on in the project's dashboard, which is what makes Vercel serve their scripts.
+
 ## Roll back
 
 If a bad build reaches production:

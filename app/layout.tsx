@@ -1,10 +1,15 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { GeistSans } from "geist/font/sans";
 import { site } from "@/content/site";
 import "./globals.css";
 
 // The whole site is prerendered; the build fails if any route needs request-time rendering.
 export const ensureStatic = "navigation";
+
+// Only Vercel serves the measurement scripts (anywhere else they 404), and previews would count our own test visits.
+const measure = process.env.VERCEL_ENV === "production";
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -43,7 +48,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <style>{"html:root{--below:0px}.deck .flip{display:none}.stage{overflow-y:auto}html:root body::before{opacity:1}"}</style>
         </noscript>
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        {measure && (
+          <>
+            <Analytics />
+            <SpeedInsights />
+          </>
+        )}
+      </body>
     </html>
   );
 }
