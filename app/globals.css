@@ -6,8 +6,10 @@
   --faint: rgba(244,255,248,.55); --line: rgba(140,254,184,.16); --radius: 22px;
   --pad-x: 44px; --pad-y: 40px;
   --font: var(--font-geist-sans), system-ui, sans-serif;
-  /* The card's paper (see .face), printed on the flip button too. */
-  --paper: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='288' height='288'><mask id='k'><rect width='288' height='288' fill='%23fff'/><pattern id='l' width='6' height='6' patternUnits='userSpaceOnUse'><rect width='6' height='1' fill='%23000' opacity='.12'/></pattern><rect width='288' height='288' fill='url(%23l)'/><pattern id='c' width='48' height='6' patternUnits='userSpaceOnUse'><rect width='1' height='6' fill='%23000' opacity='.18'/></pattern><rect width='288' height='288' fill='url(%23c)'/></mask><rect width='288' height='288' fill='%230b100e' mask='url(%23k)'/><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' seed='1' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 1.4 0 0 0 -.6'/></filter><rect width='288' height='288' filter='url(%23g)' opacity='.22'/></svg>");
+  /* The card's paper (see .face), in two layers: the laid lines, which the share image prints too, and the light
+     specks over them. Printed on the flip button as well. */
+  --paper-lines: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='288' height='288'><mask id='k'><rect width='288' height='288' fill='%23fff'/><pattern id='l' width='6' height='6' patternUnits='userSpaceOnUse'><rect width='6' height='1' fill='%23000' opacity='.12'/></pattern><rect width='288' height='288' fill='url(%23l)'/><pattern id='c' width='48' height='6' patternUnits='userSpaceOnUse'><rect width='1' height='6' fill='%23000' opacity='.18'/></pattern><rect width='288' height='288' fill='url(%23c)'/></mask><rect width='288' height='288' fill='%230b100e' mask='url(%23k)'/></svg>");
+  --paper-specks: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='288' height='288'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' seed='1' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 1.4 0 0 0 -.6'/></filter><rect width='288' height='288' filter='url(%23g)' opacity='.22'/></svg>");
   /* The smallest area a pointer can hit reliably: 24 px with a mouse, 44 px with a finger. Links and dots get theirs
      without changing how they look, and never from the text size. */
   --hit: 24px;
@@ -75,7 +77,7 @@ html[data-tall] .stage, .stage:has(> .notfound) { overflow-y: auto; }
    specks (5.3:1 on 99 % of the paper, with plain mint behind). */
 .face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
   border-radius: var(--radius); border: 1px solid var(--line);
-  background: var(--paper) center top / 288px 288px;
+  background: var(--paper-specks) center top / 288px 288px, var(--paper-lines) center top / 288px 288px;
   box-shadow: 0 30px 80px -30px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.02) inset; }
 
 /* Greeting, headline and links as one block in the middle of the card, left-aligned. Its 0° turn pairs with the back's
@@ -95,7 +97,8 @@ h1 .now { display: block; color: var(--mint); margin-top: .12em; }
    chain lines continue the card's: the card centres its tile and the button's right edge is the card's, so the
    button's tile starts half the card's width (50cqw) to the left of centre, plus the 1 px borders. */
 .flip { justify-self: end; pointer-events: auto; display: inline-flex; align-items: center; gap: 8px; min-height: 44px;
-  background: var(--paper) calc(100% + 145px - 50cqw) top / 288px 288px; color: var(--mint);
+  background: var(--paper-specks) calc(100% + 145px - 50cqw) top / 288px 288px,
+    var(--paper-lines) calc(100% + 145px - 50cqw) top / 288px 288px; color: var(--mint);
   border: 1px solid rgba(140,254,184,.42); border-radius: 999px; padding: 10px 18px; font: 500 .875rem var(--font); cursor: pointer;
   box-shadow: 0 14px 30px -16px rgba(0,0,0,.7), inset 0 0 0 100vmax rgba(140,254,184,0); transition: box-shadow .2s, border-color .2s; }
 /* Only where a pointer hovers: after a tap, a touch screen would keep the button lit on the other face. */

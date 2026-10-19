@@ -1,5 +1,5 @@
-// The scene's two shaders. scripts/rings-template.html runs the same two for the static fallback, and
-// lib/halftone.ts redoes them on the CPU for the share image: change the three together.
+// The scene's two shaders. scripts/rings-template.html runs the same two for the static fallback: change the two
+// together.
 
 // Each bubble's light, like a soap bubble: bright rim (fresnel), a highlight, a touch of diffuse, dimmer far away.
 export const lightVert = /* glsl */ `
