@@ -19,6 +19,9 @@ test.describe("with reduced motion", () => {
     const transition = await page.locator("#building > p").first().evaluate((el) => getComputedStyle(el).transitionDuration);
     expect(transition).toBe("0s");
     await expect(page.locator("#building > p").first()).toHaveCSS("opacity", "1");
+    // The current dot grows at once too.
+    const dots = await page.locator(".dots button").evaluateAll((all) => all.map((b) => getComputedStyle(b, "::before").transitionDuration));
+    expect(dots).toEqual(dots.map(() => "0s"));
   });
 
   test("the card doesn't tilt under the mouse", async ({ page }) => {
@@ -63,6 +66,20 @@ test.describe("with motion", () => {
       const { angle, tilt } = await cardTransform(page);
       return Math.abs(angle) + Math.abs(tilt);
     }).toBe(0);
+  });
+
+  // A dot under the mouse lights up, so it reads as something to click; the current one keeps its mint.
+  test("a dot lights up under the mouse", async ({ page }) => {
+    await page.goto("/?quality=low");
+    await turnOver(page);
+    const dot = (i: number) => page.locator(".dots button").nth(i);
+    const colour = (i: number) => dot(i).evaluate((b) => getComputedStyle(b, "::before").backgroundColor);
+    const [rest, current] = [await colour(1), await colour(0)];
+    await dot(1).hover();
+    await expect.poll(() => colour(1)).not.toBe(rest);
+    await dot(0).hover();
+    await expect.poll(() => colour(1)).toBe(rest);
+    expect(await colour(0)).toBe(current);
   });
 
   test("the panel content fades in once JavaScript runs", async ({ page }) => {

@@ -139,6 +139,10 @@ p { color: var(--muted); line-height: 1.62; font-size: 1rem; margin-bottom: 12px
 .dots button:focus-visible { border-radius: 50%; }
 .dots button::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--faint); transition: background .2s, transform .2s; }
 .dots button[aria-current="true"]::before { background: var(--mint); transform: scale(1.4); }
+/* Under a mouse, a dot that would move the panels lights up. */
+@media (hover: hover) and (forced-colors: none) {
+  .dots button:not([aria-current="true"]):hover::before { background: var(--text); }
+}
 /* High contrast swaps every background for the system's, which would wipe out the dots: paint them in its text
    colour, and the current one in its highlight. */
 @media (forced-colors: active) {
@@ -192,5 +196,5 @@ p { color: var(--muted); line-height: 1.62; font-size: 1rem; margin-bottom: 12px
 }
 @media (prefers-reduced-motion: reduce) {
   .card[data-ready] .panel > * { transition: none; opacity: 1; transform: none; }
-  .scene, body::before { transition: none; }
+  .scene, body::before, .dots button::before { transition: none; }
 }
