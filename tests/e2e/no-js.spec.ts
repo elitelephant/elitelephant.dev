@@ -70,6 +70,7 @@ test("share image and icons are served", async ({ request }) => {
     ["/icon.svg", "image/svg+xml"],
     ["/icon.png", "image/png"],
     ["/apple-icon.png", "image/png"],
+    ["/favicon.ico", "image/x-icon"],
     ["/fallback/rings-wide.webp", "image/webp"],
     ["/fallback/rings-tall.webp", "image/webp"],
   ]) {

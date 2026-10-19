@@ -1,4 +1,5 @@
-// Renders the images that need a browser, with Playwright: the PNG icons from app/icon.svg, and the WebP rings of
+// Renders the images that need a browser, with Playwright: the PNG icons from app/icon.svg (and favicon.ico, for the
+// clients that ask for /favicon.ico without reading the page), and the WebP rings of
 // the static fallback from scripts/rings-template.html (the scene's ring pass, drawn once). Run: node scripts/images.ts
 // The share image is not made here: next/og generates it at build time (app/opengraph-image.tsx).
 import { chromium, type Browser } from "@playwright/test";
@@ -52,6 +53,20 @@ async function icon(browser: Browser, size: number) {
   return png;
 }
 
+// An .ico holding one PNG: a 6-byte header, a 16-byte entry (size, colour depth, length, offset), then the PNG itself.
+function ico(png: Buffer, size: number) {
+  const head = Buffer.alloc(22);
+  head.writeUInt16LE(1, 2); // type: icon
+  head.writeUInt16LE(1, 4); // one image
+  head.writeUInt8(size, 6);
+  head.writeUInt8(size, 7);
+  head.writeUInt16LE(1, 10); // colour planes
+  head.writeUInt16LE(32, 12); // bits per pixel
+  head.writeUInt32LE(png.length, 14);
+  head.writeUInt32LE(22, 18); // the PNG starts right after the header
+  return Buffer.concat([head, png]);
+}
+
 async function write(file: string, data: Buffer | string) {
   const full = path.join(root, file);
   await mkdir(path.dirname(full), { recursive: true });
@@ -61,7 +76,9 @@ async function write(file: string, data: Buffer | string) {
 
 const browser = await chromium.launch({ args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
 try {
-  await write("app/icon.png", await icon(browser, 32));
+  const png = await icon(browser, 32);
+  await write("app/icon.png", png);
+  await write("public/favicon.ico", ico(png, 32));
   await write("app/apple-icon.png", await icon(browser, 180));
   await write("public/fallback/rings-wide.webp", await rings(browser, { layout: "fallback-wide", width: 1920, height: 1200, dpr: 1, cell: 6, webp: 0.8 }));
   await write("public/fallback/rings-tall.webp", await rings(browser, { layout: "fallback-tall", width: 390, height: 844, dpr: 3, cell: 6, webp: 0.8 }));
