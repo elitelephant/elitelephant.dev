@@ -64,13 +64,18 @@ async function everyPanelReads(page: Page) {
   for (const id of [...site.back.panels.map((p) => p.id), "say-hi"]) {
     const last = page.locator(`#${id} > *`).last();
     await last.scrollIntoViewIfNeeded();
-    const { top, bottom, from, to } = await last.evaluate((el) => {
+    const { r, box } = await last.evaluate((el) => {
       const r = el.getBoundingClientRect();
       const box = el.closest(".panels")!.getBoundingClientRect();
-      return { top: r.top, bottom: r.bottom, from: Math.max(0, box.top), to: Math.min(innerHeight, box.bottom) };
+      return {
+        r: { top: r.top, bottom: r.bottom, left: r.left, right: r.right },
+        box: { top: Math.max(0, box.top), bottom: Math.min(innerHeight, box.bottom), left: Math.max(0, box.left), right: Math.min(innerWidth, box.right) },
+      };
     });
-    expect(top, `the start of ${id}'s last element`).toBeGreaterThanOrEqual(from - 1);
-    expect(bottom, `the end of ${id}`).toBeLessThanOrEqual(to + 1);
+    expect(r.top, `the start of ${id}'s last element`).toBeGreaterThanOrEqual(box.top - 1);
+    expect(r.bottom, `the end of ${id}`).toBeLessThanOrEqual(box.bottom + 1);
+    expect(r.left, `the left of ${id}'s last element`).toBeGreaterThanOrEqual(box.left - 1);
+    expect(r.right, `the right of ${id}'s last element`).toBeLessThanOrEqual(box.right + 1);
   }
   await page.getByRole("button", { name: text.flipBack }).click();
   await expect(page.locator("#front")).not.toHaveAttribute("inert");
