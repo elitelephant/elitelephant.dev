@@ -41,7 +41,7 @@ test("without JavaScript the back stays hidden and there is no flip button", asy
   await page.goto("/");
   await expect(page.locator("[data-flip]")).toBeHidden();
   await expect(page.locator("#back")).toHaveAttribute("inert");
-  await expect(page.getByRole("heading", { name: site.back.panels[0].title })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: site.back.panels[0].label })).toHaveCount(0);
 });
 
 // On a phone on its side the card takes the full height; without JavaScript there is no button to leave room for.

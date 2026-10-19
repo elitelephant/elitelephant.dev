@@ -16,7 +16,7 @@ test("without WebGL the scene never loads, the rings stay and the card still tur
   await expect.poll(() => ringsShown(page)).toBe(1);
 
   await turnOver(page);
-  await expect(page.getByRole("heading", { level: 3, name: site.back.panels[0].title })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: site.back.panels[0].label })).toBeVisible();
 });
 
 test("phones in portrait get the tall rings", async ({ page }) => {

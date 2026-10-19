@@ -6,11 +6,9 @@ export type ContactLink =
   | { kind: "email"; label: string; href: string };
 
 export type Panel = {
-  id: "building" | "story" | "offline";
+  id: "story" | "building" | "offline";
   label: string;
-  title?: string;
   paragraphs: readonly string[];
-  sayHi?: string;
 };
 
 export type Site = {
@@ -38,6 +36,8 @@ export type Site = {
     flip: string;
     flipLabel: string;
     panels: readonly Panel[];
+    // The last panel: the call to write, with the contact links. The label names its dot.
+    sayHi: { label: string; text: string };
   };
   notFound: { code: string; text: string; link: string };
 };
@@ -70,29 +70,19 @@ export const site = {
     newTab: " (opens in a new tab)",
     emailPrefix: "Email ",
     links: [
+      // In alphabetical order. Out until hello@elitelephant.dev receives mail; it goes back here, after GitHub, as:
+      // { kind: "email", label: "hello@elitelephant.dev", href: "mailto:hello@elitelephant.dev" },
+      { kind: "external", label: "GitHub", href: "https://github.com/elitelephant" },
       { kind: "external", label: "Telegram", href: "https://t.me/elitelephant" },
       { kind: "external", label: "X", href: "https://x.com/elitelephant" },
-      { kind: "external", label: "GitHub", href: "https://github.com/elitelephant" },
-      // Out until hello@elitelephant.dev receives mail; it goes back as:
-      // { kind: "email", label: "hello@elitelephant.dev", href: "mailto:hello@elitelephant.dev" },
     ],
   },
   back: {
-    panelsLabel: "Building, story and offline",
+    panelsLabel: "Story, building, offline and say hi",
     dotsLabel: "Sections",
     flip: "Back",
     flipLabel: "Back to the front",
     panels: [
-      {
-        id: "building",
-        label: "Building",
-        title: "Encendidos",
-        paragraphs: [
-          "“Bring the rails to the users,” wrote Stellar’s Denelle Dixon. Lots of people already automate their work in n8n. So I’m bringing Stellar there, as one more node next to Gmail, Sheets or a webhook.",
-          "Any trigger can start a payment. A merged PR, a delivered package, an AI agent’s decision.",
-          "Moving money is the easy part. Trust is harder, so that’s what I’m working on: checking before paying, and not paying twice when a workflow retries.",
-        ],
-      },
       {
         id: "story",
         label: "Story",
@@ -104,6 +94,15 @@ export const site = {
         ],
       },
       {
+        id: "building",
+        label: "Building",
+        paragraphs: [
+          "“Bring the rails to the users,” wrote Stellar’s Denelle Dixon. Lots of people already automate their work in n8n. So I’m bringing Stellar there, as one more node next to Gmail, Sheets or a webhook.",
+          "Any trigger can start a payment. A merged PR, a delivered package, an AI agent’s decision.",
+          "Moving money is the easy part. Trust is harder, so that’s what I’m working on: checking before paying, and not paying twice when a workflow retries.",
+        ],
+      },
+      {
         id: "offline",
         label: "Offline",
         paragraphs: [
@@ -111,9 +110,9 @@ export const site = {
           "In a new city I like to get lost and walk for hours.",
           "I speak Spanish, French and English.",
         ],
-        sayHi: "Say hi.",
       },
     ],
+    sayHi: { label: "Say hi", text: "Say hi." },
   },
   notFound: {
     code: "404",

@@ -56,7 +56,7 @@ for (const [width, height] of SIZES) {
     underCard((await boxes(page, "[data-flip]"))[0], card, screen, "flip button on the back");
 
     // Every panel, scrolled into place: its text stays inside the card and clear of the dots.
-    for (const { id, label } of site.back.panels) {
+    for (const { id, label } of [...site.back.panels, { id: "say-hi", label: site.back.sayHi.label }]) {
       await page.getByRole("list", { name: text.dots }).getByRole("button", { name: label }).click();
       await expect(page.getByRole("heading", { level: 2, name: label })).toBeInViewport();
       for (const b of await boxes(page, `#${id} > *`)) {
@@ -107,7 +107,7 @@ for (const [width, height] of SIZES) {
     const panels = page.locator("#panels");
     const extra = await panels.evaluate((box) =>
       [...box.querySelectorAll<HTMLElement>(".panel")].map((panel) => `${panel.id} ${panel.offsetHeight - box.clientHeight}`));
-    expect(extra).toEqual(site.back.panels.map(({ id }) => `${id} 0`));
+    expect(extra).toEqual([...site.back.panels.map(({ id }) => `${id} 0`), "say-hi 0"]);
     await expect(panels).not.toHaveAttribute("data-overflow");
     const label = await page.locator("#back .label").first().evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
     expect(label).toBeGreaterThanOrEqual(11);

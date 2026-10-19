@@ -34,9 +34,9 @@ async function checkTargets(page: Page, size: number) {
   expect(await tooSmall(page, ".dots button", size), "dots").toEqual([]);
   expect(await tooSmall(page, "[data-flip]", 44), "flip button on the back").toEqual([]);
 
-  await page.getByRole("list", { name: text.dots }).getByRole("button", { name: text.labels[2] }).click();
-  expect(await panelAtTop(page)).toBe(2);
-  expect(await tooSmall(page, "#offline .links a", size), "Offline links").toEqual([]);
+  await page.getByRole("list", { name: text.dots }).getByRole("button", { name: text.labels[3] }).click();
+  expect(await panelAtTop(page)).toBe(3);
+  expect(await tooSmall(page, "#say-hi .links a", size), "Say hi links").toEqual([]);
 }
 
 test.describe("with a finger", () => {

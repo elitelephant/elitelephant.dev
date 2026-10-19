@@ -6,7 +6,8 @@ export const text = {
   flip: site.front.flip,
   flipBack: site.back.flipLabel,
   dots: site.back.dotsLabel,
-  labels: site.back.panels.map((p) => p.label),
+  // One per dot: the three panels and "Say hi".
+  labels: [...site.back.panels.map((p) => p.label), site.back.sayHi.label],
 };
 
 // Turns the card with the front button and waits until the back is the visible face, at rest.

@@ -33,10 +33,10 @@ test("tab order, flip with Enter, keys move one panel, Escape returns", async ({
     ["ArrowLeft", 0],
     ["ArrowRight", 1],
     ["Home", 0],
-    ["End", 2],
-    ["PageUp", 1],
-    [" ", 2],
-    ["Shift+ ", 1],
+    ["End", 3],
+    ["PageUp", 2],
+    [" ", 3],
+    ["Shift+ ", 2],
   ] as const) {
     await page.keyboard.press(key);
     expect(await panelAtTop(page), key).toBe(index);
@@ -91,7 +91,7 @@ for (const [width, height, px] of [[320, 568, 16], [568, 320, 16], [390, 844, 16
     }
     for (let i = 1; i < seen.length; i++) expect(seen[i] - seen[i - 1]).toBeGreaterThanOrEqual(0);
     for (let i = 1; i < seen.length; i++) expect(seen[i] - seen[i - 1]).toBeLessThanOrEqual(1);
-    expect(new Set(seen)).toEqual(new Set([0, 1, 2]));
+    expect(new Set(seen)).toEqual(new Set(text.labels.map((_, i) => i)));
   });
 }
 

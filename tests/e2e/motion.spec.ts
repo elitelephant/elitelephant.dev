@@ -68,8 +68,9 @@ test.describe("with motion", () => {
   test("the panel content fades in once JavaScript runs", async ({ page }) => {
     await page.goto("/?quality=low");
     await turnOver(page);
-    await expect(page.locator("#building")).toHaveClass(/\bin\b/);
-    await expect(page.locator("#building > p").first()).toHaveCSS("opacity", "1");
+    // The first panel, the one in view.
+    await expect(page.locator("#story")).toHaveClass(/\bin\b/);
+    await expect(page.locator("#story > p").first()).toHaveCSS("opacity", "1");
   });
 });
 

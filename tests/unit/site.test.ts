@@ -9,8 +9,21 @@ test("external links are https and the email link is mailto", () => {
   }
 });
 
-test("panels are building, story and offline, in that order", () => {
-  assert.deepEqual(site.back.panels.map((p) => p.id), ["building", "story", "offline"]);
+// Story first: it answers the button that turns the card, "Who’s behind this?".
+test("panels are story, building and offline, in that order", () => {
+  assert.deepEqual(site.back.panels.map((p) => p.id), ["story", "building", "offline"]);
+});
+
+test("contact links are in alphabetical order", () => {
+  const labels = site.contact.links.map((l) => l.label.toLowerCase());
+  assert.deepEqual(labels, [...labels].sort());
+});
+
+// Screen readers announce the back by this name as the card turns; it lists the dots' names, in their order.
+test("the back's name lists its panels in order", () => {
+  const names = [...site.back.panels.map((p) => p.label), site.back.sayHi.label].map((n) => n.toLowerCase());
+  const listed = `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+  assert.equal(site.back.panelsLabel.toLowerCase(), listed);
 });
 
 // Typographic apostrophes and quotes (’ “ ”) in every text: straight ones read as tick marks at the headline's size.

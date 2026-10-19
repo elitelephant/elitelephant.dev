@@ -59,10 +59,18 @@ async function everyPanelReads(page: Page) {
   // The back shows from its top, even when the stage had scrolled down to reach the button.
   await expect.poll(() => page.locator("#card").evaluate((el) => el.getBoundingClientRect().top), { message: "the back's top" })
     .toBeGreaterThanOrEqual(0);
-  for (const { id } of site.back.panels) {
+  // Scrolled into view, a panel's last element sits inside both the screen and the panels' box. Zoomed in, the
+  // page and the box scroll to fractions of a pixel, so the edge they stop at can be half a pixel off: 1 px of slack.
+  for (const id of [...site.back.panels.map((p) => p.id), "say-hi"]) {
     const last = page.locator(`#${id} > *`).last();
     await last.scrollIntoViewIfNeeded();
-    await expect(last, `the end of ${id}`).toBeInViewport({ ratio: 0.99 });
+    const { top, bottom, from, to } = await last.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const box = el.closest(".panels")!.getBoundingClientRect();
+      return { top: r.top, bottom: r.bottom, from: Math.max(0, box.top), to: Math.min(innerHeight, box.bottom) };
+    });
+    expect(top, `the start of ${id}'s last element`).toBeGreaterThanOrEqual(from - 1);
+    expect(bottom, `the end of ${id}`).toBeLessThanOrEqual(to + 1);
   }
   await page.getByRole("button", { name: text.flipBack }).click();
   await expect(page.locator("#front")).not.toHaveAttribute("inert");
