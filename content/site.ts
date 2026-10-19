@@ -46,24 +46,24 @@ export const site = {
   url: "https://elitelephant.dev",
   meta: {
     title: "elitelephant",
-    description: "I spent years watching from the sidelines. Now I'm building things.",
-    ogAlt: "I spent years watching from the sidelines. Now I'm building things.",
+    description: "I spent years watching from the sidelines. Now I’m building things.",
+    ogAlt: "I spent years watching from the sidelines. Now I’m building things.",
     shareLines: {
       watching: ["I spent years", "watching from", "the sidelines."],
-      building: ["Now I'm", "building things."],
+      building: ["Now I’m", "building things."],
     },
     twitterCreator: "@elitelephant",
     themeColor: "#8cfeb8",
   },
   card: {
     label: "elitelephant",
-    backLabel: "Who's behind elitelephant",
+    backLabel: "Who’s behind elitelephant",
   },
   front: {
-    hi: "Hi, I'm elitelephant, from Chile.",
+    hi: "Hi, I’m elitelephant, from Chile.",
     watching: "I spent years watching from the sidelines.",
-    building: "Now I'm building things.",
-    flip: "Who's behind this?",
+    building: "Now I’m building things.",
+    flip: "Who’s behind this?",
   },
   contact: {
     label: "Contact",
@@ -88,9 +88,9 @@ export const site = {
         label: "Building",
         title: "Encendidos",
         paragraphs: [
-          "\"Bring the rails to the users,\" wrote Stellar's Denelle Dixon. Lots of people already automate their work in n8n. So I'm bringing Stellar there, as one more node next to Gmail, Sheets or a webhook.",
-          "Any trigger can start a payment. A merged PR, a delivered package, an AI agent's decision.",
-          "Moving money is the easy part. Trust is harder, so that's what I'm working on: checking before paying, and not paying twice when a workflow retries.",
+          "“Bring the rails to the users,” wrote Stellar’s Denelle Dixon. Lots of people already automate their work in n8n. So I’m bringing Stellar there, as one more node next to Gmail, Sheets or a webhook.",
+          "Any trigger can start a payment. A merged PR, a delivered package, an AI agent’s decision.",
+          "Moving money is the easy part. Trust is harder, so that’s what I’m working on: checking before paying, and not paying twice when a workflow retries.",
         ],
       },
       {
@@ -100,14 +100,14 @@ export const site = {
           "Most people know me as Santiago.",
           "I bought my first crypto in January 2021. For four years that was most of it. I followed projects, read threads, speculated.",
           "In March 2025 I went to my first in-person blockchain talk and met the people behind the charts.",
-          "Since then I've joined several hackathons and won one. I've helped run community events in Santiago, built n8n flows that still run every day, and put my first site online.",
+          "Since then I’ve joined several hackathons and won one. I’ve helped run community events in Santiago, built n8n flows that still run every day, and put my first site online.",
         ],
       },
       {
         id: "offline",
         label: "Offline",
         paragraphs: [
-          "I enjoy riding bikes. Tuesday mornings are for an early social ride that ends with coffee. I'm also getting into running.",
+          "I enjoy riding bikes. Tuesday mornings are for an early social ride that ends with coffee. I’m also getting into running.",
           "In a new city I like to get lost and walk for hours.",
           "I speak Spanish, French and English.",
         ],
