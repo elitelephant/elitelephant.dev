@@ -3,6 +3,17 @@ import { site } from "../../content/site";
 
 test.use({ javaScriptEnabled: false });
 
+// With no scene to grow in, the static rings show from the start.
+test("without JavaScript the static rings show", async ({ page }) => {
+  await page.goto("/");
+  const rings = await page.evaluate(() => {
+    const style = getComputedStyle(document.body, "::before");
+    return { image: style.backgroundImage, opacity: style.opacity };
+  });
+  expect(rings.image).toContain("/fallback/rings-wide.webp");
+  expect(rings.opacity).toBe("1");
+});
+
 test("without JavaScript the headline and every link work", async ({ page }) => {
   await page.goto("/");
 

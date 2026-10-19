@@ -20,17 +20,23 @@
 }
 * { box-sizing: border-box; margin: 0; }
 html, body { height: 100%; }
-body { background: var(--bg) url(/fallback/rings-wide.webp) center / cover no-repeat; color: var(--text); font-family: var(--font); overflow: hidden;
+body { background: var(--bg); color: var(--text); font-family: var(--font); overflow: hidden;
   -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+/* The static rings, drawn from the scene once, for a page with no scene: no WebGL, a slow device, ?scene=0, or no
+   JavaScript. A page that gets the scene starts on plain mint and its bubbles grow in instead, so two sets of bubbles
+   that don't match never show at once. SceneLoader sets data-backdrop once the page stays without the scene. */
+body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: url(/fallback/rings-wide.webp) center / cover no-repeat; opacity: 0; transition: opacity .7s ease; }
+html[data-backdrop="rings"]:not([data-scene="ready"]) body::before { opacity: 1; }
 a { color: var(--mint); text-decoration: none; text-underline-offset: 3px; }
 a:hover { text-decoration: underline; }
 :focus-visible { outline: 2px solid var(--mint); outline-offset: 3px; border-radius: 6px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-/* The 3D scene sits behind the card; bubbles are grabbed on the canvas itself. It fades in over the static
-   rings once its first frame is drawn, and fades out if the device turns out too slow for it. */
+/* The 3D scene sits behind the card; bubbles are grabbed on the canvas itself. It shows once its first frame is
+   drawn (its bubbles then grow in), and fades out if the device turns out too slow for it. */
 .scene { opacity: 0; transition: opacity .7s ease; }
-html[data-scene="ready"] .scene { opacity: 1; }
+html[data-scene="ready"] .scene { opacity: 1; transition: none; }
 .scene canvas { touch-action: none; cursor: grab; }
 .scene canvas.grabbing { cursor: grabbing; }
 .debug { position: fixed; left: 12px; bottom: 12px; z-index: 10; margin: 0; max-width: none; font: .75rem ui-monospace, monospace;
@@ -152,7 +158,7 @@ p { color: var(--muted); line-height: 1.62; font-size: 1rem; margin-bottom: 12px
   h1 { font-size: clamp(1.875rem, .375rem + 8.4vw, 2.75rem); }
 }
 @media (max-width: 760px) and (orientation: portrait) {
-  body { background: var(--bg) url(/fallback/rings-tall.webp) center / cover no-repeat; }
+  body::before { background-image: url(/fallback/rings-tall.webp); }
 }
 /* Short landscape phones: let the card use the full height, less the button under it. */
 @media (max-height: 520px) and (min-width: 560px) {
@@ -172,5 +178,5 @@ p { color: var(--muted); line-height: 1.62; font-size: 1rem; margin-bottom: 12px
 }
 @media (prefers-reduced-motion: reduce) {
   .card[data-ready] .panel > * { transition: none; opacity: 1; transform: none; }
-  .scene { transition: none; }
+  .scene, body::before { transition: none; }
 }

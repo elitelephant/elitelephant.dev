@@ -74,6 +74,9 @@ export async function loadWithTier(page: Page, url: string, tier: "high" | "medi
   await expect(page.locator(".debug")).toHaveText(new RegExp(`^${tier}\\b`), { timeout: 15_000 });
 }
 
+// How much the static rings show (the body's ::before): 1 once a page stays without the scene, 0 while it has one.
+export const ringsShown = (page: Page) => page.evaluate(() => Number(getComputedStyle(document.body, "::before").opacity));
+
 // Sets the browser's default text size, as a reader does in the settings (and Chrome on Android does from the
 // system's, given the text-scale meta tag). Chromium only; call it before loading the page.
 export async function setTextSize(page: Page, px: number) {

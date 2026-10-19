@@ -37,9 +37,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         {/* Without JavaScript the card can't turn, so only the front shows and the flip button is hidden; the card
             takes the room the button would have used. With no turn there's nothing to flash a scrollbar, so the stage
-            may always scroll a card taller than the screen. The selectors outweigh globals.css, whichever loads last. */}
+            may always scroll a card taller than the screen. With no scene, the static rings show. The selectors
+            outweigh globals.css, whichever loads last. */}
         <noscript>
-          <style>{"html:root{--below:0px}.deck .flip{display:none}.stage{overflow-y:auto}"}</style>
+          <style>{"html:root{--below:0px}.deck .flip{display:none}.stage{overflow-y:auto}html:root body::before{opacity:1}"}</style>
         </noscript>
       </head>
       <body>{children}</body>

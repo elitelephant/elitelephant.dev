@@ -23,6 +23,11 @@ type Options = {
 type Mode = "scatter" | "gather";
 const KICK = 2.5; // the card passing edge-on pushes the air
 const REBUILD_MS = 150;
+// When the scene first shows, each bubble grows from nothing in its own place, at its own moment, over the plain mint
+// the page starts on. With reduced motion they are simply there.
+const GROW_S = 0.7;
+const GROW_SPREAD = 1.1;
+const easeOut = (x: number) => 1 - Math.pow(1 - x, 3);
 
 export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: Options) {
   const canvas = gl.domElement;
@@ -37,6 +42,9 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
   const group = new THREE.Group();
   scene.add(group);
   const kickRnd = seeded(42);
+  const growDelay: number[] = [];
+  let growFrom = -1;
+  let grown = false;
 
   let layout: Layout;
   let balls: Ball[] = [];
@@ -105,6 +113,9 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
       return mesh;
     });
     engine = createOwnEngine(balls);
+    const growRnd = seeded(13);
+    growDelay.length = 0;
+    for (let i = 0; i < balls.length; i++) growDelay.push(growRnd() * GROW_SPREAD);
     // Rebuilt while the back shows (a resize): start in the seats, apart, instead of flying in from the front.
     if (mode === "gather") {
       updateTargets(motionTime);
@@ -246,8 +257,15 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
       // Breathing fades in when the frame forms and out when it breaks, so sizes never jump.
       const framed = mode === "gather";
       breathAmount += ((framed ? 1 : 0) - breathAmount) * Math.min(1, dt * 1.5);
-      if (breathAmount > 0.001 || framed) {
-        for (let i = 0; i < meshes.length; i++) meshes[i].scale.setScalar(balls[i].r * (1 + breath(balls[i], motionTime, breathAmount) * BREATH_SCALE));
+      if (growFrom < 0) growFrom = t;
+      if (breathAmount > 0.001 || framed || !grown) {
+        let full = true;
+        for (let i = 0; i < meshes.length; i++) {
+          const g = grown ? 1 : Math.min(1, Math.max(0, (t - growFrom - growDelay[i]) / GROW_S));
+          if (g < 1) full = false;
+          meshes[i].scale.setScalar(balls[i].r * (1 + breath(balls[i], motionTime, breathAmount) * BREATH_SCALE) * Math.max(1e-4, easeOut(g)));
+        }
+        grown ||= full;
       }
     }
     rings.render(scene, camera);
@@ -263,8 +281,8 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
   root.dataset.sceneMotion = "moving";
   root.dataset.bubbles = String(count);
 
-  // Nothing is drawn until the shaders are compiled; the first frame then sets data-scene="ready",
-  // which fades the canvas in over the static rings (app/globals.css).
+  // Nothing is drawn until the shaders are compiled; the first frame then sets data-scene="ready", which shows the
+  // canvas and keeps the static rings away (app/globals.css).
   let compiled = false;
   let shown = false;
   let disposed = false;

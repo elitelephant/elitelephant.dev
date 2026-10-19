@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { expectAngle, loadWithTier, moveAway, setTextSize, text, threeLoaded } from "./helpers";
+import { expectAngle, loadWithTier, moveAway, ringsShown, setTextSize, text, threeLoaded } from "./helpers";
 
 // One WebGL page at a time: on SwiftShader the CPU draws every frame, and parallel pages starve each other. The
 // tests run in order in one worker; unlike serial mode, a failure doesn't skip the ones after it.
@@ -139,12 +139,24 @@ test("the scene loads without three.js's Clock warning", async ({ page }) => {
   expect(warnings.filter((w) => w.includes("THREE.Clock"))).toEqual([]);
 });
 
-test("the scene fades in over the static rings", async ({ page }) => {
+// The ink above the card: the bubbles drawn there.
+async function inkAboveCard(page: Page) {
+  const top = await page.locator("#card").evaluate((el) => el.getBoundingClientRect().top);
+  const { width } = page.viewportSize()!;
+  return inkShare(page, await page.screenshot({ clip: { x: 0, y: 0, width, height: top } }));
+}
+
+// A page that gets the scene starts on plain mint, without the static rings, and its bubbles grow in where they live,
+// so two sets of bubbles that don't match never show at once.
+test("with the scene, the page starts on plain mint and the bubbles grow in", async ({ page }) => {
   await page.goto("/?quality=medium&lock");
-  const opacity = () => page.locator(".scene").evaluate((el) => Number(getComputedStyle(el).opacity));
-  await expect(page.locator(".scene")).toHaveCount(1, { timeout: 20_000 });
   await expect(html(page)).toHaveAttribute("data-scene", "ready", { timeout: 20_000 });
-  await expect.poll(opacity, { timeout: 5_000 }).toBe(1);
+  const early = await inkAboveCard(page);
+  await expect(page.locator(".scene")).toHaveCSS("opacity", "1");
+  expect(await ringsShown(page), "static rings").toBe(0);
+  await page.waitForTimeout(2_500);
+  const late = await inkAboveCard(page);
+  expect(early, `ink above the card: ${early} at first, ${late} once grown`).toBeLessThan(late * 0.5);
 });
 
 test("?debug shows the tier, the bubbles and the frame rate", async ({ page }) => {
@@ -159,12 +171,14 @@ test("on a GPU emulated in software the page keeps the static rings by itself", 
   await loadWithTier(page, "/", "low");
   await expect(page.locator(".scene")).toHaveCount(0);
   expect(await threeLoaded(page)).toBe(false);
+  await expect.poll(() => ringsShown(page)).toBe(1);
 });
 
 test("?scene=0 leaves only the static rings, without downloading the 3D code", async ({ page }) => {
   await loadWithTier(page, "/?scene=0&quality=high", "low");
   await expect(page.locator(".scene")).toHaveCount(0);
   expect(await threeLoaded(page)).toBe(false);
+  await expect.poll(() => ringsShown(page)).toBe(1);
 });
 
 // The scene's renderer gets no WebGL context although the device check got one (a lost GPU, a crashed driver): the
@@ -183,6 +197,7 @@ test("if the scene breaks, the page drops to low and the card still turns", asyn
   await expect(page.locator(".debug")).toHaveText(/^low\b/, { timeout: 20_000 });
   await expect(html(page)).toHaveAttribute("data-tier", "low");
   await expect(page.locator(".scene")).toHaveCount(0);
+  await expect.poll(() => ringsShown(page)).toBe(1);
   await page.getByRole("button", { name: text.flip }).click();
   await expect(page.locator("#back")).not.toHaveAttribute("inert");
 });
@@ -191,6 +206,7 @@ test("low quality keeps the static rings, without downloading the 3D code", asyn
   await loadWithTier(page, "/?quality=low", "low");
   await expect(page.locator(".scene")).toHaveCount(0);
   expect(await threeLoaded(page)).toBe(false);
+  await expect.poll(() => ringsShown(page)).toBe(1);
 });
 
 test("a device too slow for the scene steps down to medium, then fades it out for the static rings", async ({ page }) => {
@@ -206,6 +222,7 @@ test("a device too slow for the scene steps down to medium, then fades it out fo
   expect((await log()).bubbles).toEqual(["64", "44"]);
   await expect(page.locator(".scene")).toHaveCount(0);
   await expect(html(page)).not.toHaveAttribute("data-scene", "ready");
+  await expect.poll(() => ringsShown(page)).toBe(1);
   expect(errors).toEqual([]);
 });
 
@@ -501,6 +518,14 @@ test("a bubble can be grabbed, dragged and thrown, and goes back to its place", 
 
 test.describe("with reduced motion", () => {
   test.use({ reducedMotion: "reduce" });
+
+  test("the bubbles are there at once, without growing in", async ({ page }) => {
+    await sceneReady(page, "/?quality=medium&lock");
+    const first = await inkAboveCard(page);
+    await page.waitForTimeout(2_500);
+    const later = await inkAboveCard(page);
+    expect(first, `ink above the card: ${first} at first, ${later} later`).toBeGreaterThan(later * 0.9);
+  });
 
   test("the frame holds still, without breathing", async ({ page }) => {
     await sceneReady(page, "/?quality=medium&lock");

@@ -32,6 +32,11 @@ const markTier = (tier: Quality) => {
   document.documentElement.dataset.tier = tier;
 };
 
+// The page stays without the scene for now: the static rings show (app/globals.css), until a scene comes back.
+const showRings = () => {
+  document.documentElement.dataset.backdrop = "rings";
+};
+
 // The text paints first; the scene loads after the page has loaded, when the browser is idle.
 // ?scene=0 leaves only the static rings.
 export function SceneLoader() {
@@ -52,6 +57,7 @@ export function SceneLoader() {
       markTier(plan.start);
       setOptions({ lock: params.lock, debug: params.debug, tier: plan.start, ceiling: plan.ceiling });
       if (plan.start !== "low") setLive(plan.start);
+      else showRings();
     };
     const whenIdle = () => {
       if (typeof window.requestIdleCallback === "function") {
@@ -78,6 +84,7 @@ export function SceneLoader() {
     setOptions((o) => ({ ...o, tier: to }));
     if (to !== "low") return setLive(to);
     document.documentElement.dataset.scene = "off";
+    showRings();
     setTimeout(() => setLive(null), FADE_OUT_MS);
     if (held && !cameBack.current) {
       cameBack.current = true;
@@ -88,6 +95,7 @@ export function SceneLoader() {
   // A broken scene is gone for good: the page is at low, like a device with no scene at all.
   const onFail = useCallback(() => {
     markTier("low");
+    showRings();
     setOptions((o) => ({ ...o, tier: "low" }));
     setLive(null);
   }, []);
