@@ -257,3 +257,27 @@ for (const [width, height] of [[667, 375], [844, 390], [932, 430]] as const) {
     expect(new Set(tops).size, `label tops ${tops}`).toBe(1);
   });
 }
+
+// The flip button is printed on the card's paper, and its chain lines (every 48 px) continue the card's: the start of
+// its paper tile and the card's are a whole number of chain lines apart, wherever the card's width puts its centre.
+for (const [width, height] of [[1280, 800], [1024, 768], [390, 844], [320, 568], [844, 390]] as const) {
+  test(`the flip button's paper lines up with the card's at ${width}x${height}`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await page.goto("/?quality=low");
+    const apart = await page.evaluate(() => {
+      // Where an element's paper tile starts, from its padding box and its computed background-position-x.
+      const tile = (el: Element) => {
+        const s = getComputedStyle(el);
+        const r = el.getBoundingClientRect();
+        const border = parseFloat(s.borderLeftWidth);
+        const pos = s.backgroundPositionX.replace(/\s+/g, "");
+        const percent = Number(/([+-]?[\d.]+)%/.exec(pos)?.[1] ?? 0);
+        const px = Number(/([+-]?[\d.]+)px/.exec(pos)?.[1] ?? 0);
+        return r.left + border + ((r.width - 2 * border - 288) * percent) / 100 + px;
+      };
+      return tile(document.querySelector("[data-flip]")!) - tile(document.getElementById("front")!);
+    });
+    const off = ((apart % 48) + 48) % 48;
+    expect(Math.min(off, 48 - off), `tiles ${apart.toFixed(2)} px apart`).toBeLessThanOrEqual(0.5);
+  });
+}

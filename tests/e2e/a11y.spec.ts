@@ -51,7 +51,14 @@ test("selected text is dark on mint", async ({ page }) => {
     return {
       selection: [s.backgroundColor, s.color],
       mint: getComputedStyle(document.querySelector("h1 .now")!).color,
-      card: getComputedStyle(document.querySelector("[data-flip]")!).backgroundColor,
+      // The card's colour, from the stylesheet: the card itself is printed on paper, an image.
+      card: (() => {
+        const probe = document.body.appendChild(document.createElement("div"));
+        probe.style.color = "var(--card)";
+        const colour = getComputedStyle(probe).color;
+        probe.remove();
+        return colour;
+      })(),
     };
   });
   expect(selection).toEqual([mint, card]);
