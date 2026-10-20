@@ -88,6 +88,39 @@ async function recordScene(page: Page) {
   return () => page.evaluate(() => (window as typeof window & { __sceneLog: SceneLog }).__sceneLog);
 }
 
+// Moves a pointer over the page every half second, so the scene never settles and stops drawing. Tests that judge the
+// frame rate over many seconds need it drawing the whole time. The event has no pointer type, so it pushes no bubble.
+async function keepAwake(page: Page) {
+  await page.addInitScript(() => setInterval(() => dispatchEvent(new PointerEvent("pointermove")), 500));
+}
+
+// Counts the page's WebGL draw calls, from before its own scripts run.
+async function countDraws(page: Page) {
+  await page.addInitScript(() => {
+    let draws = 0;
+    const gl = WebGL2RenderingContext.prototype;
+    const { drawArrays, drawElements, drawArraysInstanced, drawElementsInstanced } = gl;
+    gl.drawArrays = function (...args) {
+      draws++;
+      drawArrays.apply(this, args);
+    };
+    gl.drawElements = function (...args) {
+      draws++;
+      drawElements.apply(this, args);
+    };
+    gl.drawArraysInstanced = function (...args) {
+      draws++;
+      drawArraysInstanced.apply(this, args);
+    };
+    gl.drawElementsInstanced = function (...args) {
+      draws++;
+      drawElementsInstanced.apply(this, args);
+    };
+    Object.assign(window, { __draws: () => draws });
+  });
+  return () => page.evaluate(() => (window as typeof window & { __draws: () => number }).__draws());
+}
+
 // Share of pixels that differ between two screenshots. The page decodes them, since Node has no PNG decoder built in.
 async function changedShare(page: Page, a: Buffer, b: Buffer) {
   return page.evaluate(async ([a, b]) => {
@@ -226,6 +259,7 @@ test("a device too slow for the scene steps down to medium, then fades it out fo
   test.setTimeout(120_000);
   const errors = collectErrors(page);
   const log = await recordScene(page);
+  await keepAwake(page);
   await frameRate(page, TOO_SLOW);
   await page.goto("/?quality=high");
   expect(await page.evaluate(() => document.hasFocus()), "a page without focus is not judged").toBe(true);
@@ -245,6 +279,7 @@ test("a device with room to spare steps up from medium to high", async ({ page }
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 480, height: 360 });
   const log = await recordScene(page);
+  await keepAwake(page);
   await frameRate(page, 60);
   await page.goto("/?quality=medium");
   await expect.poll(async () => (await log()).tiers, { timeout: 100_000 }).toEqual(["low", "medium", "high"]);
@@ -256,6 +291,7 @@ test("a tier the device was too slow for stays closed", async ({ page }) => {
   test.setTimeout(180_000);
   await page.setViewportSize({ width: 480, height: 360 });
   const log = await recordScene(page);
+  await keepAwake(page);
   const tiers = async () => (await log()).tiers;
   await frameRate(page, 60);
   await page.goto("/?quality=medium");
@@ -274,6 +310,7 @@ test.describe("on a touch screen", () => {
   test("the scene stays at medium however fast it runs", async ({ page }) => {
     test.setTimeout(120_000);
     const log = await recordScene(page);
+    await keepAwake(page);
     await frameRate(page, 60);
     await sceneReady(page, "/?quality=medium");
     // The warm-up and five windows, longer than stepping up takes on a machine with a mouse.
@@ -296,6 +333,7 @@ test.describe("on a touch screen", () => {
   test("after held frames the scene comes back once, and the second time it stays away", async ({ page }) => {
     test.setTimeout(180_000);
     const log = await recordScene(page);
+    await keepAwake(page);
     const tiers = async () => (await log()).tiers;
     await frameRate(page, 60);
     await sceneReady(page, "/?quality=medium");
@@ -317,6 +355,7 @@ test.describe("on a touch screen", () => {
 test("?lock keeps the tier on a device too slow for it", async ({ page }) => {
   test.setTimeout(120_000);
   const log = await recordScene(page);
+  await keepAwake(page);
   await frameRate(page, TOO_SLOW);
   await sceneReady(page, "/?quality=high&lock");
   // Two slow reports in a row are enough to step down; by the third it would have.
@@ -441,15 +480,52 @@ const setHidden = (page: Page, hidden: boolean) => page.evaluate((hidden) => {
 test("a hidden tab stops the scene drawing until it shows again", async ({ page }) => {
   const log = await recordScene(page);
   const reports = async () => (await log()).fpsReports;
+  const draws = await countDraws(page);
   await sceneReady(page, "/?quality=medium&lock");
   await expect.poll(reports, { timeout: 20_000 }).toBeGreaterThanOrEqual(1);
   await setHidden(page, true);
-  const hidden = await reports();
+  const hidden = await draws();
   await page.waitForTimeout(6000);
-  expect(await reports(), "reports while hidden").toBe(hidden);
+  expect(await draws(), "draw calls while hidden").toBe(hidden);
   await setHidden(page, false);
-  await expect.poll(reports, { timeout: 20_000 }).toBeGreaterThan(hidden);
+  await expect.poll(draws, { timeout: 20_000 }).toBeGreaterThan(hidden);
   await expect(html(page)).toHaveAttribute("data-scene", "ready");
+});
+
+// The scene times its settling on a clock of its own, which a hidden tab doesn't restart. Timed by three's clock, which
+// starts over with the frame loop, the bubbles would drift on after the tab shows for as long as the page had been open.
+test("showing a hidden tab again doesn't keep the drift going past 5 s", async ({ page }) => {
+  test.setTimeout(120_000);
+  await sceneReady(page, "/?quality=medium&lock");
+  await expect(html(page)).toHaveAttribute("data-scene-motion", "still", { timeout: SLOW });
+  await page.waitForTimeout(3000);
+  await page.mouse.move(2, 2);
+  await expect(html(page)).toHaveAttribute("data-scene-motion", "moving");
+  await setHidden(page, true);
+  await page.waitForTimeout(1000);
+  await setHidden(page, false);
+  const shown = Date.now();
+  await expect(html(page)).toHaveAttribute("data-scene-motion", "still", { timeout: 15_000 });
+  expect(Date.now() - shown, "ms until still").toBeLessThan(6_000);
+});
+
+// Once nothing moves, the scene stops drawing, since a still frame costs the GPU as much as a moving one. The canvas
+// keeps its last frame, and a move of the pointer starts the drawing and the drift again.
+test("a settled scene stops drawing until the pointer moves", async ({ page }) => {
+  test.setTimeout(120_000);
+  const draws = await countDraws(page);
+  await sceneReady(page, "/?quality=medium&lock");
+  await expect(html(page)).toHaveAttribute("data-scene-loop", "paused", { timeout: SLOW });
+  // React Three Fiber draws one more frame on any change to its state, the pause included.
+  await page.waitForTimeout(500);
+  const paused = await draws();
+  await page.waitForTimeout(2000);
+  expect(await draws(), "draw calls while paused").toBe(paused);
+  expect(await inkAboveCard(page), "bubbles still shown while paused").toBeGreaterThan(0.01);
+  await page.mouse.move(2, 2);
+  await expect(html(page)).toHaveAttribute("data-scene-loop", "running");
+  await expect(html(page)).toHaveAttribute("data-scene-motion", "moving");
+  await expect.poll(draws).toBeGreaterThan(paused);
 });
 
 // The canvas is decoration (aria-hidden), so with the scene drawing axe finds what it finds without it, nothing.

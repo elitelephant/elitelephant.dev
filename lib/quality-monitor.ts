@@ -38,6 +38,10 @@ function createWindows(warmup: number, onFps: (fps: number) => void) {
       frames = 0;
       unfocused = false;
     },
+    // Drops the open window, so the next frame opens a new one, with no warm-up.
+    skip() {
+      windowStart = -1;
+    },
     // The finished window's rate, when there is one to judge.
     frame(now: number, focused: boolean): number | null {
       if (startedAt < 0) startedAt = now;
@@ -77,6 +81,11 @@ export function createQualityMonitor(tier: LiveTier, onFps: (fps: number) => voi
       slow = 0;
       fast = 0;
       held = 0;
+    },
+    // After the scene paused its drawing, the time it stood still is no frame rate. The window open across it is
+    // dropped; the counts and the finished warm-up stay.
+    skip() {
+      windows.skip();
     },
     // Call once per frame, with whether the page has focus. Returns where to step to, or null to stay.
     frame(now: number, focused = true): Step | null {

@@ -125,6 +125,33 @@ test("medium never steps up when the tier above is closed, or without room to sp
   assert.equal(run("high", 60, 60, true), null);
 });
 
+test("skip() drops the window open across a pause, so the pause reports no frame rate", () => {
+  const rates: number[] = [];
+  const monitor = createQualityMonitor("medium", (fps) => rates.push(fps));
+  let step: Step | null = null;
+  let t = 0;
+  for (; t < 5000; t += 1000 / 60) step ??= monitor.frame(t);
+  monitor.skip();
+  t += 30_000;
+  for (const end = t + 9000; t < end; t += 1000 / 60) step ??= monitor.frame(t);
+  assert.equal(step, null);
+  assert.ok(rates.length >= 4, `${rates.length} windows`);
+  assert.ok(Math.min(...rates) > 55, `rates ${rates.map((r) => r.toFixed(1))}`);
+});
+
+test("skip() keeps the warm-up and the counts, so fast windows either side of a pause add up", () => {
+  const monitor = createQualityMonitor("medium", () => {}, true);
+  let step: Step | null = null;
+  let t = 0;
+  // The warm-up and two fast windows, one short of stepping up.
+  for (; t < 6100; t += 1000 / 60) step ??= monitor.frame(t);
+  assert.equal(step, null);
+  monitor.skip();
+  t += 30_000;
+  for (const end = t + 2100; t < end; t += 1000 / 60) step ??= monitor.frame(t);
+  assert.equal(step?.to, "high");
+});
+
 test("one fast window between slow ones does not step up", () => {
   const monitor = createQualityMonitor("medium", () => {}, true);
   let step: Step | null = null;

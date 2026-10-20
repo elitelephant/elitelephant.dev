@@ -1,6 +1,6 @@
 // The bubbles, their physics and the pointer, outside React. Front: scattered, drifting, pushed by the cursor,
 // grabbed and thrown. Back: a loose crowd around the card that holds still and breathes. Drifting and breathing settle
-// a few seconds after the last interaction (see pace in ./frame).
+// a few seconds after the last interaction (see pace in ./frame), and once nothing moves the scene stops drawing.
 import * as THREE from "three";
 import { createOwnEngine } from "@/components/physics/own";
 import type { Engine } from "@/components/physics/engine";
@@ -18,11 +18,20 @@ type Options = {
   count: number;
   reduce: boolean;
   invalidate: () => void;
+  // The renderer's frame loop, which draws every frame while "always" and only when asked while "demand".
+  loop: { get: () => string; set: (frameloop: "always" | "demand") => void };
 };
 
 type Mode = "scatter" | "gather";
 const KICK = 2.5; // the card passing edge-on pushes the air
 const REBUILD_MS = 150;
+const MAX_DT = 1 / 20; // a long frame never moves the physics further than this
+// A longer gap between frames (a paused loop, a hidden tab) adds no more than this to the scene's clock.
+const MAX_GAP = 0.25;
+// Once nothing has moved for this long, the scene stops drawing and the canvas keeps its last frame. A still frame
+// costs the GPU as much as a moving one.
+const QUIET_S = 0.5;
+const STILL = 2e-5 ** 2; // the most a resting bubble moves in a frame, squared, in world units (far under a pixel)
 // When the scene first shows, each bubble inflates from nothing in its own place, at its own moment, over the plain
 // mint the page starts on. It overshoots its size by about 17 % and settles, done within two seconds, well before the
 // scene settles at five. With reduced motion they are there from the start.
@@ -31,7 +40,7 @@ const GROW_SPREAD = 1.1;
 const OVERSHOOT = 2.3; // the ease-out-back's constant, for a swing of about 17 % past full size
 const inflate = (x: number) => 1 + (OVERSHOOT + 1) * Math.pow(x - 1, 3) + OVERSHOOT * Math.pow(x - 1, 2);
 
-export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: Options) {
+export function createBubbles({ gl, scene, camera, count, reduce, invalidate, loop }: Options) {
   const canvas = gl.domElement;
   const root = document.documentElement;
   const rings = createRings(gl);
@@ -55,13 +64,28 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
   let targets: THREE.Vector3[] = [];
   let mode: Mode = flipStore.get().flipped ? "gather" : "scatter";
   let breathAmount = 0;
+  // The scene's clock, in seconds, which runs only while it draws. three's clock starts over whenever the frame loop
+  // changes, so the time since the last interaction would come out wrong after a pause or a hidden tab.
   let time = 0;
   // The drift and breathing run on their own clock, which slows to a stop when nothing happens (see pace).
   let motionTime = 0;
   let activeAt = 0;
   let moving = true;
+  let quietFor = 0;
+  const pause = () => {
+    loop.set("demand");
+    root.dataset.sceneLoop = "paused";
+  };
+  // Draws again after a pause. A hidden tab stays stopped, and reduced motion only ever draws on demand.
+  const resume = () => {
+    quietFor = 0;
+    if (reduce || document.hidden || loop.get() === "always") return;
+    loop.set("always");
+    root.dataset.sceneLoop = "running";
+  };
   const wake = () => {
     activeAt = time;
+    resume();
   };
   let still = false; // with reduced motion, positions are worked out once per change, then left alone
 
@@ -178,7 +202,9 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
   };
   // relatedTarget is null when the pointer leaves the window, so stop pushing bubbles from the edge.
   const onOut = (e: PointerEvent) => {
-    if (!e.relatedTarget) hover = false;
+    if (e.relatedTarget) return;
+    hover = false;
+    resume();
   };
   const onDown = (e: PointerEvent) => {
     wake();
@@ -202,6 +228,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
       canvas.classList.remove("grabbing");
     }
     hover = false;
+    resume();
   };
   addEventListener("pointermove", onMove, { passive: true });
   addEventListener("pointerout", onOut);
@@ -229,14 +256,18 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
       if (next.shape !== layout.shape || Math.abs(next.halfW - layout.halfW) > 0.5) build();
       else setLayout(card);
       still = false;
+      resume();
       invalidate();
     }, REBUILD_MS);
   }
 
   // ---------- Frame ----------
   const scratch = new THREE.Vector3();
-  function frame(dt: number, t: number) {
-    time = t;
+  const before = new THREE.Vector3();
+  function frame(delta: number) {
+    const dt = Math.min(delta, MAX_DT);
+    const step = Math.min(delta, MAX_GAP);
+    time += step;
     if (!compiled) return;
     if (reduce) {
       if (!still) {
@@ -250,7 +281,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
         still = true;
       }
     } else {
-      const speed = pace(t - activeAt);
+      const speed = pace(time - activeAt);
       motionTime += dt * speed;
       // Tells tests whether the drift and breathing have settled.
       if (moving !== speed > 0) {
@@ -261,15 +292,21 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
       engine.setTargets(targets);
       engine.setPointer(hover && grabbing < 0 ? scratch.copy(world) : null, 2.6 * Math.max(layout.scale, 0.6), 60);
       engine.step(dt);
-      for (let i = 0; i < meshes.length; i++) engine.getPosition(i, meshes[i].position);
+      let moved = 0;
+      for (let i = 0; i < meshes.length; i++) {
+        const p = meshes[i].position;
+        before.copy(p);
+        engine.getPosition(i, p);
+        moved = Math.max(moved, before.distanceToSquared(p));
+      }
       // Breathing fades in when the frame forms and out when it breaks, so sizes never jump.
       const framed = mode === "gather";
       breathAmount += ((framed ? 1 : 0) - breathAmount) * Math.min(1, dt * 1.5);
-      if (growFrom < 0) growFrom = t;
+      if (growFrom < 0) growFrom = time;
       if (breathAmount > 0.001 || framed || !grown) {
         let full = true;
         for (let i = 0; i < meshes.length; i++) {
-          const g = grown ? 1 : Math.min(1, Math.max(0, (t - growFrom - growDelay[i]) / GROW_S));
+          const g = grown ? 1 : Math.min(1, Math.max(0, (time - growFrom - growDelay[i]) / GROW_S));
           if (g < 1) full = false;
           meshes[i].scale.setScalar(balls[i].r * (1 + breath(balls[i], motionTime, breathAmount) * BREATH_SCALE) * Math.max(1e-4, inflate(g)));
         }
@@ -278,8 +315,13 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
           root.dataset.sceneGrowth = "done";
         }
       }
+      const settled = speed === 0 && grown && grabbing < 0 && moved < STILL && Math.abs((framed ? 1 : 0) - breathAmount) < 1e-3;
+      quietFor = settled ? quietFor + step : 0;
+      // Drawing again after the tab showed, which restarts the loop without a wake.
+      if (root.dataset.sceneLoop === "paused" && loop.get() === "always") root.dataset.sceneLoop = "running";
     }
     rings.render(scene, camera);
+    if (quietFor >= QUIET_S && loop.get() === "always") pause();
     // Only on the first frame. When the scene steps down, SceneLoader sets "off" so the canvas fades out.
     if (!shown) {
       shown = true;
@@ -290,6 +332,8 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
   build();
   root.dataset.sceneMode = mode;
   root.dataset.sceneMotion = "moving";
+  // Tells tests whether the scene draws every frame or has paused, settled.
+  if (!reduce) root.dataset.sceneLoop = "running";
   // Tells tests whether the bubbles are still growing in. With reduced motion they are there from the start.
   root.dataset.sceneGrowth = reduce ? "done" : "growing";
 
@@ -330,6 +374,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
       delete root.dataset.scene;
       delete root.dataset.sceneMode;
       delete root.dataset.sceneMotion;
+      delete root.dataset.sceneLoop;
       delete root.dataset.sceneGrowth;
       delete root.dataset.sceneShape;
       delete root.dataset.sceneCard;
