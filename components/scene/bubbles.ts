@@ -59,7 +59,13 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate, lo
 
   let layout: Layout;
   let balls: Ball[] = [];
-  let meshes: THREE.Mesh[] = [];
+  // Every bubble in one draw call. A rebuild may draw fewer (a phone's strips), never more than the tier's count.
+  const instances = new THREE.InstancedMesh(geometry, light, count);
+  // The bubbles move every frame and fill the view, so there's nothing to cull.
+  instances.frustumCulled = false;
+  group.add(instances);
+  let positions: THREE.Vector3[] = [];
+  let sizes: number[] = [];
   let engine: Engine;
   let targets: THREE.Vector3[] = [];
   let mode: Mode = flipStore.get().flipped ? "gather" : "scatter";
@@ -128,19 +134,34 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate, lo
     root.dataset.sceneCard = `${card.x} ${card.y} ${card.w} ${card.h}`;
   }
 
+  // Writes each bubble's whole model-view matrix into its instance, and the scale of its normal matrix, both worked out
+  // here in double precision the way three works them out for a single mesh. Worked out on the GPU instead, in single
+  // precision, a few ring edges came out a shade different from the scene drawn one mesh per bubble.
+  const model = new THREE.Matrix4();
+  const modelView = new THREE.Matrix4();
+  const normalMatrix = new THREE.Matrix3();
+  const normalScale = new THREE.InstancedBufferAttribute(new Float32Array(count), 1);
+  geometry.setAttribute("normalScale", normalScale);
+  function place() {
+    camera.updateMatrixWorld();
+    for (let i = 0; i < balls.length; i++) {
+      model.makeScale(sizes[i], sizes[i], sizes[i]).setPosition(positions[i]);
+      instances.setMatrixAt(i, modelView.multiplyMatrices(camera.matrixWorldInverse, model));
+      normalScale.setX(i, normalMatrix.getNormalMatrix(modelView).elements[0]);
+    }
+    instances.instanceMatrix.needsUpdate = true;
+    normalScale.needsUpdate = true;
+  }
+
   function build() {
     setLayout(cardRect());
     balls = makeBalls(layout, bubbleCount(layout, count));
     root.dataset.bubbles = String(balls.length);
     targets = balls.map((b) => b.home.clone());
-    group.clear();
-    meshes = balls.map((b) => {
-      const mesh = new THREE.Mesh(geometry, light);
-      mesh.scale.setScalar(b.r);
-      mesh.position.copy(b.home);
-      group.add(mesh);
-      return mesh;
-    });
+    instances.count = balls.length;
+    positions = balls.map((b) => b.home.clone());
+    sizes = balls.map((b) => b.r);
+    place();
     engine = createOwnEngine(balls);
     const growRnd = seeded(13);
     growDelay.length = 0;
@@ -176,6 +197,8 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate, lo
   const world = new THREE.Vector3();
   const lastWorld = new THREE.Vector3();
   const pointerVel = new THREE.Vector3();
+  const sphere = new THREE.Sphere();
+  const hitPoint = new THREE.Vector3();
   let lastTime = 0;
   let hover = false;
   let grabbing = -1;
@@ -213,9 +236,17 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate, lo
     lastWorld.copy(world);
     lastTime = e.timeStamp;
     pointerVel.set(0, 0, 0);
-    const hit = ray.intersectObjects(meshes, false)[0];
-    if (!hit) return;
-    grabbing = meshes.indexOf(hit.object as THREE.Mesh);
+    // The nearest bubble the ray meets. The instances hold model-view matrices (see place), so three can't raycast them.
+    let nearest = Infinity;
+    for (let i = 0; i < balls.length; i++) {
+      if (!ray.ray.intersectSphere(sphere.set(positions[i], sizes[i]), hitPoint)) continue;
+      const d = hitPoint.distanceTo(ray.ray.origin);
+      if (d < nearest) {
+        nearest = d;
+        grabbing = i;
+      }
+    }
+    if (grabbing < 0) return;
     engine.grab(grabbing, world);
     canvas.setPointerCapture(e.pointerId);
     canvas.classList.add("grabbing");
@@ -274,9 +305,9 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate, lo
         updateTargets(0);
         engine.teleport(targets);
         engine.settle();
-        for (let i = 0; i < meshes.length; i++) {
-          engine.getPosition(i, meshes[i].position);
-          meshes[i].scale.setScalar(balls[i].r);
+        for (let i = 0; i < balls.length; i++) {
+          engine.getPosition(i, positions[i]);
+          sizes[i] = balls[i].r;
         }
         still = true;
       }
@@ -293,11 +324,10 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate, lo
       engine.setPointer(hover && grabbing < 0 ? scratch.copy(world) : null, 2.6 * Math.max(layout.scale, 0.6), 60);
       engine.step(dt);
       let moved = 0;
-      for (let i = 0; i < meshes.length; i++) {
-        const p = meshes[i].position;
-        before.copy(p);
-        engine.getPosition(i, p);
-        moved = Math.max(moved, before.distanceToSquared(p));
+      for (let i = 0; i < balls.length; i++) {
+        before.copy(positions[i]);
+        engine.getPosition(i, positions[i]);
+        moved = Math.max(moved, before.distanceToSquared(positions[i]));
       }
       // Breathing fades in when the frame forms and out when it breaks, so sizes never jump.
       const framed = mode === "gather";
@@ -305,10 +335,10 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate, lo
       if (growFrom < 0) growFrom = time;
       if (breathAmount > 0.001 || framed || !grown) {
         let full = true;
-        for (let i = 0; i < meshes.length; i++) {
+        for (let i = 0; i < balls.length; i++) {
           const g = grown ? 1 : Math.min(1, Math.max(0, (time - growFrom - growDelay[i]) / GROW_S));
           if (g < 1) full = false;
-          meshes[i].scale.setScalar(balls[i].r * (1 + breath(balls[i], motionTime, breathAmount) * BREATH_SCALE) * Math.max(1e-4, inflate(g)));
+          sizes[i] = balls[i].r * (1 + breath(balls[i], motionTime, breathAmount) * BREATH_SCALE) * Math.max(1e-4, inflate(g));
         }
         if (full && !grown) {
           grown = true;
@@ -320,6 +350,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate, lo
       // Drawing again after the tab showed, which restarts the loop without a wake.
       if (root.dataset.sceneLoop === "paused" && loop.get() === "always") root.dataset.sceneLoop = "running";
     }
+    place();
     rings.render(scene, camera);
     if (quietFor >= QUIET_S && loop.get() === "always") pause();
     // Only on the first frame. When the scene steps down, SceneLoader sets "off" so the canvas fades out.
@@ -368,6 +399,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate, lo
       canvas.removeEventListener("pointerup", onUp);
       canvas.removeEventListener("pointercancel", onUp);
       scene.remove(group);
+      instances.dispose();
       geometry.dispose();
       light.dispose();
       rings.dispose();

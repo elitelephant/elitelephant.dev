@@ -2,11 +2,22 @@
 // together.
 
 // Each bubble's light, like a soap bubble: bright rim (fresnel), a highlight, a touch of diffuse, dimmer far away.
+// The scene draws every bubble in one call (an InstancedMesh). Each instance holds its bubble's whole model-view matrix
+// and the scale its normal matrix applies (see place in bubbles.ts).
 export const lightVert = /* glsl */ `
   varying vec3 vN; varying vec3 vV;
+  #ifdef USE_INSTANCING
+    attribute float normalScale;
+  #endif
   void main() {
-    vec4 mv = modelViewMatrix * vec4(position, 1.0);
-    vN = normalize(normalMatrix * normal); vV = -mv.xyz;
+    #ifdef USE_INSTANCING
+      vec4 mv = instanceMatrix * vec4(position, 1.0);
+      vN = normalize(normalScale * normal);
+    #else
+      vec4 mv = modelViewMatrix * vec4(position, 1.0);
+      vN = normalize(normalMatrix * normal);
+    #endif
+    vV = -mv.xyz;
     gl_Position = projectionMatrix * mv;
   }`;
 
