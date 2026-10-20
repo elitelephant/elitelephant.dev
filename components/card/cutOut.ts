@@ -9,6 +9,9 @@ export function cutOut(face: HTMLElement, line: HTMLElement) {
   if (!card || !ctx) return () => {};
   let frame = 0;
   let stopped = false;
+  let drawn = 0; // masks started
+  let shown = 0; // the mask in place, by the order it was started in
+  let url = "";
 
   const draw = () => {
     // Measured flat, since the card's turn and tilt would skew the letters' boxes.
@@ -49,8 +52,24 @@ export function cutOut(face: HTMLElement, line: HTMLElement) {
       const baseline = rect.top - box.top + (rect.height - (m.fontBoundingBoxAscent + m.fontBoundingBoxDescent)) / 2 + m.fontBoundingBoxAscent;
       ctx.fillText(ch, rect.left - box.left, baseline);
     }
-    face.style.setProperty("--cut", `url(${canvas.toDataURL()})`);
-    face.dataset.cut = "";
+    // Encoded and decoded off the frame, so a resize doesn't stall on it (tens of ms on a slow phone). The mask in place
+    // stays until the new one can paint at once, so the paper never shows without one.
+    const id = ++drawn;
+    canvas.toBlob(async (blob) => {
+      if (!blob || stopped) return;
+      const next = URL.createObjectURL(blob);
+      const img = new Image();
+      img.src = next;
+      // One that can't be decoded ahead still goes in, and loads as it paints.
+      await img.decode().catch(() => {});
+      // A mask started later may have gone in while this one decoded.
+      if (stopped || id < shown) return URL.revokeObjectURL(next);
+      shown = id;
+      face.style.setProperty("--cut", `url(${next})`);
+      face.dataset.cut = "";
+      if (url) URL.revokeObjectURL(url);
+      url = next;
+    });
   };
   // Drawn again whenever the card or the line changes size (the window, the text size), and once the font is in.
   const later = () => {
@@ -71,5 +90,6 @@ export function cutOut(face: HTMLElement, line: HTMLElement) {
     document.fonts.removeEventListener("loadingdone", later);
     delete face.dataset.cut;
     face.style.removeProperty("--cut");
+    if (url) URL.revokeObjectURL(url);
   };
 }
