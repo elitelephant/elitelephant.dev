@@ -129,6 +129,14 @@ for (const [quality, bubbles] of [["medium", "44"], ["high", "64"]] as const) {
   });
 }
 
+// On a phone the room around the card is two thin margins, and the tier's 44 bubbles crowded them.
+test("on a phone the scene draws 24 bubbles", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await sceneReady(page, "/?quality=medium&lock");
+  await expect(html(page)).toHaveAttribute("data-scene-shape", "strip");
+  await expect(html(page)).toHaveAttribute("data-bubbles", "24");
+});
+
 // three.js warns that Clock is deprecated whenever React Three Fiber builds its clock; the site drops that one warning.
 test("the scene loads without three.js's Clock warning", async ({ page }) => {
   const warnings: string[] = [];
@@ -229,7 +237,7 @@ test("a device too slow for the scene steps down to medium, then fades it out fo
 
 // Browsers can report fewer cores or less memory than there are (Brave makes up new numbers for each site), so a
 // strong machine may start at medium; once it holds the frame rate, it steps up. A small window, so SwiftShader draws
-// the frames it takes quickly.
+// the frames it takes quickly. A window that small frames the card in strips, which draw 24 bubbles at either tier.
 test("a device with room to spare steps up from medium to high", async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 480, height: 360 });
@@ -237,7 +245,7 @@ test("a device with room to spare steps up from medium to high", async ({ page }
   await frameRate(page, 60);
   await page.goto("/?quality=medium");
   await expect.poll(async () => (await log()).tiers, { timeout: 100_000 }).toEqual(["low", "medium", "high"]);
-  expect((await log()).bubbles).toEqual(["44", "64"]);
+  expect((await log()).bubbles).toEqual(["24"]);
 });
 
 // High proved too slow once: back at medium the scene keeps it, however fast medium runs, rather than go back and forth.
@@ -369,8 +377,8 @@ async function inkShare(page: Page, png: Buffer) {
   }, png.toString("base64"));
 }
 
-// Turning a window from desktop to phone while the back shows: the frame rebuilds around the new card, as strips above
-// and below it. The page's static rings are hidden, so any ring above the card is the scene's.
+// Turning a window from desktop to phone while the back shows: the frame rebuilds around the new card, with the phone's
+// fewer bubbles, some of them above it. The page's static rings are hidden, so any ring above the card is the scene's.
 test("with the back showing, a resize frames the new card", async ({ page }) => {
   const errors = collectErrors(page);
   await page.setViewportSize({ width: 1280, height: 800 });
@@ -380,6 +388,7 @@ test("with the back showing, a resize frames the new card", async ({ page }) => 
   await expect(html(page)).toHaveAttribute("data-scene-shape", "around");
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(html(page)).toHaveAttribute("data-scene-shape", "strip", { timeout: 10_000 });
+  await expect(html(page)).toHaveAttribute("data-bubbles", "24");
   const top = await page.locator("#card").evaluate((el) => el.getBoundingClientRect().top);
   await expect.poll(async () => inkShare(page, await page.screenshot({ clip: { x: 0, y: 0, width: 390, height: top } })), { timeout: SLOW })
     .toBeGreaterThan(0.03);

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { Vector3 } from "three";
 import { createOwnEngine } from "../../components/physics/own.ts";
 import { BREATH_SCALE, frameTarget } from "../../components/scene/frame.ts";
-import { CAM_Z, HALF_H, computeLayout, makeBalls, type Box, type Layout } from "../../components/scene/layout.ts";
+import { CAM_Z, HALF_H, STRIP_BUBBLES, STRIP_SEATS, bubbleCount, computeLayout, makeBalls, type Box, type Layout } from "../../components/scene/layout.ts";
 import { CARDS } from "../fixtures/cards.ts";
 
 test("each screen gets the right frame shape and bubble size", () => {
@@ -29,10 +29,13 @@ const clearOf = (box: Box, p: Vector3, r: number) =>
 const seats = (layout: Layout, count: number, lean = 0) =>
   makeBalls(layout, count).map((b) => ({ b, p: frameTarget(b, layout, lean, new Vector3()) }));
 
-// Where the strips have room for the bubbles; a short phone's are thinner than a bubble (see below).
-const ROOMY = Object.entries(CARDS).filter(([name]) => name !== "smallPhone");
+// Around the card on a desktop the frame is a ring, clear of the card's edge.
+const AROUND = ["desktop", "smallDesktop"] as const;
+// Where the screen leaves room on one or two sides only, the frame is a loose one on all four sides.
+const STRIPS = ["tablet", "phone", "smallPhone", "landscape"] as const;
 
-for (const [name, c] of ROOMY) {
+for (const name of AROUND) {
+  const c = CARDS[name];
   // A breath leans a bubble out as it swells and in as it shrinks, so leaning in is the close call.
   test(`${name}: no seat in the frame touches the card, at either end of a breath`, () => {
     const layout = computeLayout(c.view, c.card);
@@ -61,57 +64,88 @@ for (const [name, c] of ROOMY) {
       });
     }
   });
+
+  test(`${name}: every bubble the tier draws takes a seat`, () => {
+    const layout = computeLayout(c.view, c.card);
+    assert.equal(bubbleCount(layout, 64), 64);
+    assert.ok(makeBalls(layout, 64).every((b) => b.seated));
+  });
 }
 
-// Where the screen leaves room on one or two sides only, the frame goes there, and none of it is lost off screen.
-for (const name of ["tablet", "phone", "landscape"] as const) {
-  test(`${name}: every seat in the frame is on screen`, () => {
-    const layout = computeLayout(CARDS[name].view, CARDS[name].card);
-    for (const { b, p } of seats(layout, 44)) {
-      const s = onScreen(p);
-      const r = seenRadius(b.r, p);
-      assert.ok(Math.abs(s.x) + r <= layout.halfW + 1e-6 && Math.abs(s.y) + r <= HALF_H + 1e-6, `${name}: a seat at ${s.x.toFixed(2)}, ${s.y.toFixed(2)} is off screen`);
+// How much of a bubble at `p` the screen shows: on screen and not behind the card. Sampled over its disc.
+function shown(layout: Layout, p: Vector3, r: number) {
+  const s = onScreen(p);
+  const R = seenRadius(r, p);
+  let visible = 0;
+  let all = 0;
+  for (let i = 0; i < 24; i++) {
+    for (let j = 0; j < 24; j++) {
+      const x = s.x + (((i + 0.5) / 24) * 2 - 1) * R;
+      const y = s.y + (((j + 0.5) / 24) * 2 - 1) * R;
+      if ((x - s.x) ** 2 + (y - s.y) ** 2 > R * R) continue;
+      all++;
+      const inView = Math.abs(x) <= layout.halfW && Math.abs(y) <= HALF_H;
+      const behind = x > layout.box.left && x < layout.box.right && y < layout.box.top && y > layout.box.bottom;
+      if (inView && !behind) visible++;
+    }
+  }
+  return visible / all;
+}
+
+for (const name of STRIPS) {
+  const c = CARDS[name];
+
+  // The 44 or 64 of the tiers crowded the thin room around the card.
+  test(`${name}: ${STRIP_BUBBLES} bubbles, ${STRIP_SEATS} of them seated in the back's frame`, () => {
+    const layout = computeLayout(c.view, c.card);
+    assert.equal(bubbleCount(layout, 44), STRIP_BUBBLES);
+    assert.equal(bubbleCount(layout, 64), STRIP_BUBBLES);
+    assert.equal(makeBalls(layout, STRIP_BUBBLES).filter((b) => b.seated).length, STRIP_SEATS);
+  });
+
+  // A seat may tuck a bubble partly behind the card or past the screen's edge, never all of it.
+  test(`${name}: every seat in the frame shows part of its bubble, at either end of a breath`, () => {
+    const layout = computeLayout(c.view, c.card);
+    for (const lean of [-1, 0, 1]) {
+      for (const { b, p } of seats(layout, STRIP_BUBBLES, lean).filter(({ b }) => b.seated)) {
+        const part = shown(layout, p, b.r * (1 + lean * BREATH_SCALE));
+        assert.ok(part >= 0.1, `${name}: a seat at ${onScreen(p).x.toFixed(2)}, ${onScreen(p).y.toFixed(2)} shows ${Math.round(part * 100)}%`);
+      }
+    }
+  });
+
+  test(`${name}: a bubble without a seat waits wholly behind the card`, () => {
+    const layout = computeLayout(c.view, c.card);
+    for (const { b, p } of seats(layout, STRIP_BUBBLES).filter(({ b }) => !b.seated)) {
+      assert.equal(shown(layout, p, b.r), 0, `${name}: a bubble waiting at ${onScreen(p).x.toFixed(2)}, ${onScreen(p).y.toFixed(2)} shows`);
     }
   });
 }
 
-// A short phone upright leaves strips thinner than a bubble: the bubbles keep their size and sit across the strip,
-// partly behind the card and past the screen's edge, rather than shrink to dots.
-test("smallPhone: the frame's bubbles sit across the thin strips", () => {
-  const layout = computeLayout(CARDS.smallPhone.view, CARDS.smallPhone.card);
-  for (const { p } of seats(layout, 44)) {
+// The frame isn't two rows above and below the card: on a phone upright some seats are at the card's sides, where the
+// bubble shows as a slice, and on one on its side, where the sides are the room, about half of them or more.
+test("the loose frame uses the card's sides too", () => {
+  const atSide = (layout: Layout, p: Vector3) => {
     const s = onScreen(p);
-    const inStrip = (s.y > layout.box.top && s.y < HALF_H) || (s.y < layout.box.bottom && s.y > -HALF_H);
-    assert.ok(inStrip && Math.abs(s.x) < layout.halfW, `a seat's middle at ${s.x.toFixed(2)}, ${s.y.toFixed(2)} is outside the strips`);
-  }
-});
-
-test("phones and tablets: the frame splits between above and below the card", () => {
-  for (const name of ["tablet", "phone", "smallPhone"] as const) {
+    return (s.x < layout.box.left || s.x > layout.box.right) && s.y < layout.box.top && s.y > layout.box.bottom;
+  };
+  const share = (name: keyof typeof CARDS) => {
     const layout = computeLayout(CARDS[name].view, CARDS[name].card);
-    const all = seats(layout, 44).map(({ p }) => onScreen(p));
-    const above = all.filter((p) => p.y > layout.box.top).length / all.length;
-    const below = all.filter((p) => p.y < layout.box.bottom).length / all.length;
-    assert.ok(above >= 0.35 && below >= 0.35, `${name}: ${Math.round(above * 100)}% above, ${Math.round(below * 100)}% below`);
-  }
+    const seated = seats(layout, STRIP_BUBBLES).filter(({ b }) => b.seated);
+    return seated.filter(({ p }) => atSide(layout, p)).length / seated.length;
+  };
+  for (const name of ["phone", "smallPhone"] as const) assert.ok(share(name) >= 0.1 && share(name) <= 0.5, `${name}: ${Math.round(share(name) * 100)}% at the sides`);
+  assert.ok(share("landscape") >= 0.45, `landscape: ${Math.round(share("landscape") * 100)}% at the sides`);
 });
 
-test("short landscape: every seat is at a side of the card", () => {
-  const layout = computeLayout(CARDS.landscape.view, CARDS.landscape.card);
-  for (const { p } of seats(layout, 44)) {
-    const s = onScreen(p);
-    assert.ok(s.x < layout.box.left || s.x > layout.box.right);
-  }
-});
-
-// The front's bubbles drift around their homes. Where the card leaves room on one or two sides only, from half to nine
-// in ten of them used to start behind it.
-test("where the frame is a strip, most bubbles start clear of the card", () => {
-  for (const name of ["tablet", "phone", "smallPhone", "landscape"] as const) {
+// Where the card covers most of the screen, the front's bubbles start anywhere, so many start wholly behind it,
+// where only its cut-out line shows them drift past. Kept off the card, nearly none would.
+test("where the frame is a strip, many of the front's bubbles start wholly behind the card", () => {
+  for (const name of ["phone", "smallPhone"] as const) {
     const layout = computeLayout(CARDS[name].view, CARDS[name].card);
-    const balls = makeBalls(layout, 44);
-    const behind = balls.filter((b) => !clearOf(layout.box, onScreen(b.home), seenRadius(b.r, b.home))).length;
-    assert.ok(behind / balls.length < 0.5, `${name}: ${behind} of ${balls.length} behind the card`);
+    const balls = makeBalls(layout, STRIP_BUBBLES);
+    const hidden = balls.filter((b) => shown(layout, b.home, b.r) === 0).length / balls.length;
+    assert.ok(hidden >= 0.3, `${name}: ${Math.round(hidden * 100)}% wholly behind the card`);
   }
 });
 

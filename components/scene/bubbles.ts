@@ -7,7 +7,7 @@ import type { Engine } from "@/components/physics/engine";
 import { flipStore } from "@/lib/flip-store";
 import { seeded } from "@/lib/random";
 import { BREATH_SCALE, breath, frameTarget, frontTarget, pace } from "./frame";
-import { computeLayout, makeBalls, type Ball, type CardRect, type Layout } from "./layout";
+import { bubbleCount, computeLayout, makeBalls, type Ball, type CardRect, type Layout } from "./layout";
 import { createRings } from "./rings";
 import { lightFrag, lightVert } from "./shaders";
 
@@ -106,7 +106,8 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
 
   function build() {
     setLayout(cardRect());
-    balls = makeBalls(layout, count);
+    balls = makeBalls(layout, bubbleCount(layout, count));
+    root.dataset.bubbles = String(balls.length);
     targets = balls.map((b) => b.home.clone());
     group.clear();
     meshes = balls.map((b) => {
@@ -291,7 +292,6 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
   root.dataset.sceneMotion = "moving";
   // For tests: whether the bubbles are still growing in. With reduced motion they are there from the start.
   root.dataset.sceneGrowth = reduce ? "done" : "growing";
-  root.dataset.bubbles = String(count);
 
   // Nothing is drawn until the shaders are compiled; the first frame then sets data-scene="ready", which shows the
   // canvas and keeps the static rings away (app/globals.css).

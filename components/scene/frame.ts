@@ -1,7 +1,7 @@
-// Where each bubble goes. Front: it drifts around its home. Back: it holds a seat around the card,
-// clear of its edge, watching it, and breathes.
+// Where each bubble goes. Front: it drifts around its home. Back: it holds a seat around the card, watching it, and
+// breathes, or waits behind the card.
 import type { Vector3 } from "three";
-import { CAM_Z, HALF_H, OPEN_ROOM, STRIP_GAP, type Ball, type Layout, type Side } from "./layout.ts";
+import { CAM_Z, OPEN_ROOM, type Ball, type Layout, type Side } from "./layout.ts";
 
 const GAP = [0.5, 2.6] as const; // around: from the card's edge
 const FRAME_Z = [0.5, -2] as const; // near seats sit a little forward, far ones deeper
@@ -23,11 +23,17 @@ export function frontTarget(b: Ball, t: number, out: Vector3) {
 // -1..1, each bubble out of step with its neighbours; `amount` fades it in and out as the frame forms.
 export const breath = (b: Ball, t: number, amount: number) => Math.sin(t * BREATH + b.phase) * amount;
 
+// How deep a bubble's seat is, and how big it looks there from the camera.
+const seatZ = (b: Ball) => FRAME_Z[0] + (FRAME_Z[1] - FRAME_Z[0]) * b.depth;
+const seenRadius = (b: Ball) => b.r * (CAM_Z / (CAM_Z - seatZ(b)));
+
 export function frameTarget(b: Ball, layout: Layout, lean: number, out: Vector3) {
   const l = lean * BREATH_LEAN;
-  if (layout.shape !== "strip" || !stripSeat(b, layout, l, out)) aroundSeat(b, layout, l, out);
+  if (!b.seated) waitSeat(b, layout, out);
+  else if (layout.shape === "strip") freeSeat(b, layout, l, out);
+  else aroundSeat(b, layout, l, out);
   // Push the deeper seats outward so that, seen in perspective, they still sit where planned.
-  const z = FRAME_Z[0] + (FRAME_Z[1] - FRAME_Z[0]) * b.depth;
+  const z = seatZ(b);
   out.multiplyScalar((CAM_Z - z) / CAM_Z);
   out.z = z;
   return out;
@@ -49,35 +55,41 @@ function aroundSeat(b: Ball, { box }: Layout, l: number, out: Vector3) {
 
 const SIDES: readonly Side[] = ["top", "right", "bottom", "left"];
 
-// Seats only where the screen has room, spread over it from near the card out to the edge of the screen, with more
-// seats where there is more room. Returns false when no side has room, so the caller falls back to the ring.
-// Which sides have room leaves out the flip button's row; a side that has it spreads over all of it, button included.
-function stripSeat(b: Ball, { box, room, free, halfW }: Layout, l: number, out: Vector3) {
+// A loose frame where the screen leaves room on one or two sides only. The seats go on all four sides: a side with
+// room takes them by its length, a thin one (the sides of a phone upright, the top and bottom of one on its side) by
+// half of it, and a bubble there shows as a slice between the card's edge and the screen's. Each sits from a third
+// of the way behind the card's edge (from the edge itself on a thin side, so its slice is more than a sliver) out to
+// partly past the screen's, further out the deeper it sits, so the frame doesn't line up in rows. The flip button's
+// row counts as room: bubbles may pass behind it.
+const THIN_SIDE = 0.5;
+function freeSeat(b: Ball, { box, room, free }: Layout, l: number, out: Vector3) {
   const across = box.right - box.left;
   const down = box.top - box.bottom;
   const length: Record<Side, number> = { top: across, bottom: across, right: down, left: down };
-  const weight = SIDES.map((side) => length[side] * Math.min(1, Math.max(0, free[side] - OPEN_ROOM) / (GAP[1] - STRIP_GAP)));
+  const weight = SIDES.map((side) => length[side] * (free[side] > OPEN_ROOM ? 1 : THIN_SIDE));
   const total = weight.reduce((sum, w) => sum + w, 0);
-  if (total <= 0) return false;
   let s = ((b.slot + 1) % 1) * total;
   let i = 0;
   while (i < SIDES.length - 1 && s >= weight[i]) s -= weight[i++];
   const side = SIDES[i];
   const f = s / weight[i];
-  // Sizes as the camera sees them at this seat's depth, so the bubble stays on screen however near it sits, with
-  // room for a breath to lean it out. A bubble wider than its strip (a short phone upright) sits across it instead,
-  // partly behind the card and past the screen's edge.
-  const z = FRAME_Z[0] + (FRAME_Z[1] - FRAME_Z[0]) * b.depth;
-  const r = b.r * (CAM_Z / (CAM_Z - z));
-  const near = STRIP_GAP + r;
-  const m = near > room[side] - r + 1e-6
-    ? room[side] * (0.35 + 0.3 * b.depth)
-    : near + (Math.max(near, room[side] - r - BREATH_LEAN) - near) * b.depth;
-  const x = (v: number) => Math.max(-halfW + r, Math.min(halfW - r, v));
-  const y = (v: number) => Math.max(-HALF_H + r, Math.min(HALF_H - r, v));
-  if (side === "top") out.set(x(box.left - m + f * (across + 2 * m)), box.top + m + l, 0);
-  else if (side === "bottom") out.set(x(box.right + m - f * (across + 2 * m)), box.bottom - m - l, 0);
-  else if (side === "right") out.set(box.right + m + l, y(box.top + m - f * (down + 2 * m)), 0);
-  else out.set(box.left - m - l, y(box.bottom - m + f * (down + 2 * m)), 0);
-  return true;
+  // Sizes as the camera sees them at this seat's depth.
+  const r = seenRadius(b);
+  const open = free[side] > OPEN_ROOM;
+  const inner = open ? -0.35 * r : 0;
+  // On a side with room the farthest seats leave about a third of the bubble past the screen's edge; on a thin one
+  // the middle may pass it, since the slice that shows is the one next to the card.
+  const outer = Math.max(inner, room[side] + (open ? -0.35 : 0.25) * r);
+  const m = inner + (outer - inner) * b.depth;
+  if (side === "top") out.set(box.left - r + f * (across + 2 * r), box.top + m + l, 0);
+  else if (side === "bottom") out.set(box.right + r - f * (across + 2 * r), box.bottom - m - l, 0);
+  else if (side === "right") out.set(box.right + m + l, box.top - f * down, 0);
+  else out.set(box.left - m - l, box.bottom + f * down, 0);
+}
+
+// A bubble without a seat waits behind the card, its home pulled inside the card's edges, and comes back out when
+// the front returns.
+function waitSeat(b: Ball, { box }: Layout, out: Vector3) {
+  const r = seenRadius(b);
+  out.set(Math.max(box.left + r, Math.min(box.right - r, b.home.x)), Math.max(box.bottom + r, Math.min(box.top - r, b.home.y)), 0);
 }
