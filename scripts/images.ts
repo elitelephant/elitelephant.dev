@@ -1,6 +1,6 @@
 // Renders the images that need a browser, with Playwright: the PNG icons from app/icon.svg (and favicon.ico, for the
-// clients that ask for /favicon.ico without reading the page), and the WebP rings of
-// the static fallback from scripts/rings-template.html (the scene's ring pass, drawn once). Run: node scripts/images.ts
+// clients that ask for /favicon.ico without reading the page), and the WebP rings of the static fallback from
+// scripts/rings-template.html (the scene's ring pass, drawn once). Run: node scripts/images.ts
 // The share image is not made here: next/og generates it at build time (app/opengraph-image.tsx).
 import { chromium, type Browser } from "@playwright/test";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
@@ -31,10 +31,10 @@ async function open(browser: Browser, width: number, height: number, dpr: number
 
 async function rings(browser: Browser, shot: Rings) {
   const page = await open(browser, shot.width, shot.height, shot.dpr);
-  await page.addInitScript((cfg) => Object.assign(window, { OG: cfg }), shot);
+  await page.addInitScript((cfg) => Object.assign(window, { RINGS: cfg }), shot);
   await page.goto(`${HOST}/`);
-  await page.waitForFunction(() => (window as unknown as { __done?: boolean }).__done === true);
-  const url = await page.evaluate(() => (window as unknown as { __webp: string }).__webp);
+  await page.waitForFunction(() => (window as typeof window & { __done?: boolean }).__done === true);
+  const url = await page.evaluate(() => (window as typeof window & { __webp: string }).__webp);
   await page.close();
   return Buffer.from(url.split(",")[1], "base64");
 }

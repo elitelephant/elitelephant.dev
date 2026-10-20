@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   verify:
-    # Pinned: ubuntu-latest moves to Ubuntu 26 on 19-10-2026, mid-launch.
+    # Pinned, so the runner's Ubuntu changes only when this line does.
     runs-on: ubuntu-24.04
     # Inside Playwright's image, where the Linux screenshots in tests/e2e were made, so text renders exactly the same.
     # Its browsers come installed; the tag follows @playwright/test in package.json.
@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       # In the container the checkout belongs to another user, so git refuses to read it once checkout's own
-      # temporary setting is gone; the reference test lists the repo's files with git.
+      # temporary setting is gone; the reference and colour tests list the repo's files with git.
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - uses: actions/setup-node@v7
         with:
