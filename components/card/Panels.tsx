@@ -87,7 +87,7 @@ export function Panels({ label, dotsLabel, sections, children }: Props) {
     fit();
     const observer = new ResizeObserver(fit);
     observer.observe(box);
-    document.fonts?.ready.then(fit);
+    document.fonts.ready.then(fit);
     box.addEventListener("scroll", more, { passive: true });
     return () => {
       observer.disconnect();
