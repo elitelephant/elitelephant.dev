@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { site } from "../../content/site";
-import { panelAtTop, text } from "./helpers";
+import { dot, panelAtTop, text } from "./helpers";
 
 // A finger needs about 44×44 px to hit what it aims at (Apple, WCAG 2.5.5); a mouse 24×24 (WCAG 2.5.8). Links and dots
 // get that area around them without changing how they look, and never from the text size; buttons are drawn 44 tall.
@@ -34,7 +34,7 @@ async function checkTargets(page: Page, size: number) {
   expect(await tooSmall(page, ".dots button", size), "dots").toEqual([]);
   expect(await tooSmall(page, "[data-flip]", 44), "flip button on the back").toEqual([]);
 
-  await page.getByRole("list", { name: text.dots }).getByRole("button", { name: text.labels[3] }).click();
+  await dot(page, 3).click();
   expect(await panelAtTop(page)).toBe(3);
   expect(await tooSmall(page, "#say-hi .links a", size), "Say hi links").toEqual([]);
 }

@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 import { site } from "../../content/site";
 
 // Names the tests find things by. They come from the site's copy, so a text edit doesn't break the tests.
@@ -9,6 +10,23 @@ export const text = {
   // One per dot: the three panels and "Say hi".
   labels: [...site.back.panels.map((p) => p.label), site.back.sayHi.label],
 };
+
+// The back's dot for panel `index`, in the order of text.labels.
+export const dot = (page: Page, index: number) => page.getByRole("list", { name: text.dots }).getByRole("button", { name: text.labels[index] });
+
+// What axe finds, one line per rule with the elements it hit, so a failure names them.
+export const axeViolations = async (page: Page) =>
+  (await new AxeBuilder({ page }).analyze()).violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(", ")}`);
+
+// The page's uncaught errors and console errors, from now on.
+export function collectErrors(page: Page) {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  page.on("console", (m) => {
+    if (m.type() === "error") errors.push(m.text());
+  });
+  return errors;
+}
 
 // Turns the card with the front button and waits until the back is the visible face, at rest.
 export async function turnOver(page: Page) {

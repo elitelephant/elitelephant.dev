@@ -1,10 +1,8 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 import { site } from "../../content/site";
-import { panelAtTop, setTextSize, text, turnOver } from "./helpers";
+import { dot, panelAtTop, setTextSize, text, turnOver } from "./helpers";
 
 test.use({ reducedMotion: "reduce" });
-
-const dot = (page: Page, index: number) => page.getByRole("list", { name: text.dots }).getByRole("button", { name: text.labels[index] });
 
 test("tab order, flip with Enter, keys move one panel, Escape returns", async ({ page }) => {
   await page.goto("/?quality=low");
@@ -89,8 +87,11 @@ for (const [width, height, px] of [[320, 568, 16], [568, 320, 16], [390, 844, 16
       await page.keyboard.press("PageDown");
       seen.push(await panelAtTop(page));
     }
-    for (let i = 1; i < seen.length; i++) expect(seen[i] - seen[i - 1]).toBeGreaterThanOrEqual(0);
-    for (let i = 1; i < seen.length; i++) expect(seen[i] - seen[i - 1]).toBeLessThanOrEqual(1);
+    for (let i = 1; i < seen.length; i++) {
+      const step = seen[i] - seen[i - 1];
+      expect(step).toBeGreaterThanOrEqual(0);
+      expect(step).toBeLessThanOrEqual(1);
+    }
     expect(new Set(seen)).toEqual(new Set(text.labels.map((_, i) => i)));
   });
 }

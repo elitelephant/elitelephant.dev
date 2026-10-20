@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { site } from "../../content/site";
 import { CARDS } from "../fixtures/cards";
-import { panelAtTop, text } from "./helpers";
+import { dot, panelAtTop, text } from "./helpers";
 
 // The most used screens (StatCounter, September 2026), then the edges: the smallest phone, an old iPhone on its side,
 // a small desktop, a short desktop window (a 1280x720 laptop with the taskbar and a bookmarks bar), the desktop the
@@ -34,6 +34,13 @@ const underCard = (button: Box, card: Box, screen: Box, what: string) => {
   expect(Math.abs(button.right - card.right), `${what} lined up with the card's right edge`).toBeLessThanOrEqual(0.5);
   inside(button, screen, what);
 };
+// How far the card and the button under it run past the room inside the stage's padding, and that bottom padding.
+const stageFit = (page: Page) => page.evaluate(() => {
+  const stage = document.querySelector<HTMLElement>(".stage")!;
+  const style = getComputedStyle(stage);
+  const room = stage.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+  return { padding: style.paddingBottom, over: document.querySelector<HTMLElement>(".deck")!.offsetHeight - room };
+});
 
 for (const [width, height] of SIZES) {
   test(`both faces fit at ${width}x${height}`, async ({ page }) => {
@@ -56,8 +63,8 @@ for (const [width, height] of SIZES) {
     underCard((await boxes(page, "[data-flip]"))[0], card, screen, "flip button on the back");
 
     // Every panel, scrolled into place: its text stays inside the card and clear of the dots.
-    for (const { id, label } of [...site.back.panels, { id: "say-hi", label: site.back.sayHi.label }]) {
-      await page.getByRole("list", { name: text.dots }).getByRole("button", { name: label }).click();
+    for (const [i, { id, label }] of [...site.back.panels, { id: "say-hi", label: site.back.sayHi.label }].entries()) {
+      await dot(page, i).click();
       await expect(page.getByRole("heading", { level: 2, name: label })).toBeInViewport();
       for (const b of await boxes(page, `#${id} > *`)) {
         expect(b.left, `${id} left`).toBeGreaterThanOrEqual(card.left);
@@ -95,13 +102,7 @@ for (const [width, height] of SIZES) {
     await page.goto("/?quality=low");
     await page.evaluate(() => document.fonts.ready);
     // The card and the button under it fit the stage, so the page has nothing to scroll.
-    const overStage = await page.evaluate(() => {
-      const stage = document.querySelector<HTMLElement>(".stage")!;
-      const style = getComputedStyle(stage);
-      const room = stage.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
-      return document.querySelector<HTMLElement>(".deck")!.offsetHeight - room;
-    });
-    expect(overStage).toBeLessThanOrEqual(0.5);
+    expect((await stageFit(page)).over).toBeLessThanOrEqual(0.5);
     await page.getByRole("button", { name: text.flip }).click();
     await expect(page.locator("#back")).not.toHaveAttribute("inert");
     const panels = page.locator("#panels");
@@ -122,12 +123,7 @@ test("on an iPhone on its side, the card and the button fit above the home indic
   await cdp.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, left: 47, right: 47, bottom: 21 } });
   await page.goto("/?quality=low");
   await page.evaluate(() => document.fonts.ready);
-  const { padding, over } = await page.evaluate(() => {
-    const stage = document.querySelector<HTMLElement>(".stage")!;
-    const style = getComputedStyle(stage);
-    const room = stage.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
-    return { padding: style.paddingBottom, over: document.querySelector<HTMLElement>(".deck")!.offsetHeight - room };
-  });
+  const { padding, over } = await stageFit(page);
   expect(padding, "the stage keeps the indicator's inset").toBe("21px");
   expect(over).toBeLessThanOrEqual(0.5);
   await expect(page.locator("html")).not.toHaveAttribute("data-tall");
@@ -171,14 +167,13 @@ test("with the back showing, a resize keeps the panel and fits the text again", 
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/?quality=low");
   await page.getByRole("button", { name: text.flip }).click();
-  await page.getByRole("list", { name: text.dots }).getByRole("button", { name: text.labels[2] }).click();
+  await dot(page, 2).click();
   expect(await panelAtTop(page)).toBe(2);
   for (const [width, height] of [[390, 844], [844, 390], [1280, 800]] as const) {
     await page.setViewportSize({ width, height });
     await expect(page.locator("#back")).not.toHaveAttribute("inert");
     expect(await panelAtTop(page), `${width}x${height}`).toBe(2);
-    const dot = page.getByRole("list", { name: text.dots }).getByRole("button", { name: text.labels[2] });
-    await expect(dot).toHaveAttribute("aria-current", "true");
+    await expect(dot(page, 2)).toHaveAttribute("aria-current", "true");
     await expect.poll(() => page.locator("#panels").evaluate((box) =>
       Math.max(...[...box.querySelectorAll<HTMLElement>(".panel")].map((p) => p.offsetHeight - box.clientHeight))), { message: `${width}x${height}` }).toBe(0);
     const [card] = await boxes(page, "#card");
@@ -187,7 +182,6 @@ test("with the back showing, a resize keeps the panel and fits the text again", 
   }
 });
 
-// The panels are headed by their name alone.
 test("the panel labels show only their name", async ({ page }) => {
   await page.goto("/?quality=low");
   for (const { id, label } of site.back.panels) await expect(page.locator(`#${id} .label`)).toHaveText(label);
@@ -213,8 +207,8 @@ for (const [width, height] of [[320, 568], [360, 800], [375, 667]] as const) {
       };
       return [words(h1), words(h1.querySelector(".now")!)];
     });
-    expect(lines[0], "I spent years watching from the sidelines.").toBeLessThanOrEqual(3);
-    expect(lines[1], "Now I’m building things.").toBeLessThanOrEqual(3);
+    expect(lines[0], site.front.watching).toBeLessThanOrEqual(3);
+    expect(lines[1], site.front.building).toBeLessThanOrEqual(3);
   });
 }
 

@@ -130,7 +130,7 @@ test("one fast window between slow ones does not step up", () => {
   let step: Step | null = null;
   let t = 0;
   for (const fps of [60, 60, 40, 60, 60, 40, 60, 60, 40]) {
-    // a 2 s window at each rate, after the 2 s warm-up
+    // A 2 s window at each rate; the first one also covers the 2 s warm-up.
     for (const end = t + (t === 0 ? 4000 : 2000); t < end; t += 1000 / fps) step ??= monitor.frame(t);
   }
   assert.equal(step, null);

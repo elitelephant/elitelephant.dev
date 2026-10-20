@@ -1,6 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import AxeBuilder from "@axe-core/playwright";
-import { expectAngle, loadWithTier, moveAway, ringsShown, setTextSize, text, threeLoaded } from "./helpers";
+import { axeViolations, collectErrors, expectAngle, loadWithTier, moveAway, ringsShown, setTextSize, text, threeLoaded } from "./helpers";
 
 // One WebGL page at a time: on SwiftShader the CPU draws every frame, and parallel pages starve each other. The
 // tests run in order in one worker; unlike serial mode, a failure doesn't skip the ones after it.
@@ -11,15 +10,6 @@ test.describe.configure({ mode: "default", timeout: 60_000 });
 const SLOW = 30_000;
 
 const html = (page: Page) => page.locator("html");
-
-function collectErrors(page: Page) {
-  const errors: string[] = [];
-  page.on("pageerror", (e) => errors.push(e.message));
-  page.on("console", (m) => {
-    if (m.type() === "error") errors.push(m.text());
-  });
-  return errors;
-}
 
 async function sceneReady(page: Page, url: string) {
   await page.goto(url);
@@ -39,7 +29,7 @@ async function turnOver(page: Page) {
 // setFrameRate changes the rate on a page that is already running.
 async function frameRate(page: Page, fps: number) {
   await page.addInitScript((fps) => {
-    const w = window as unknown as { __fps: number };
+    const w = window as typeof window & { __fps: number };
     w.__fps = fps;
     const real = performance.now.bind(performance);
     let step = 1000 / fps;
@@ -61,7 +51,7 @@ async function frameRate(page: Page, fps: number) {
 }
 
 const setFrameRate = (page: Page, fps: number) =>
-  page.evaluate((fps) => void ((window as unknown as { __fps: number }).__fps = fps), fps);
+  page.evaluate((fps) => void ((window as typeof window & { __fps: number }).__fps = fps), fps);
 
 // Waits until the page's own clock (see frameRate) has run `ms` further. That clock moves with animation frames, and
 // with the scene gone nothing may be asking for them, so a frame loop of the test's own keeps it going.
@@ -95,7 +85,7 @@ async function recordScene(page: Page) {
     }).observe(document, { subtree: true, attributes: true, attributeFilter: ["data-tier", "data-bubbles"] });
     addEventListener("scene-fps", () => log.fpsReports++);
   });
-  return () => page.evaluate(() => (window as unknown as { __sceneLog: SceneLog }).__sceneLog);
+  return () => page.evaluate(() => (window as typeof window & { __sceneLog: SceneLog }).__sceneLog);
 }
 
 // Share of pixels that differ between two screenshots. The page decodes them: Node has no PNG decoder built in.
@@ -112,6 +102,19 @@ async function changedShare(page: Page, a: Buffer, b: Buffer) {
     for (let i = 0; i < pa.length; i += 4) if (pa[i] !== pb[i] || pa[i + 1] !== pb[i + 1] || pa[i + 2] !== pb[i + 2]) changed++;
     return changed / (pa.length / 4);
   }, [a.toString("base64"), b.toString("base64")] as const);
+}
+
+// Share of a screenshot's pixels that are not the page's mint: the rings drawn there.
+async function inkShare(page: Page, png: Buffer) {
+  return page.evaluate(async (png) => {
+    const bitmap = await createImageBitmap(await (await fetch(`data:image/png;base64,${png}`)).blob());
+    const context = new OffscreenCanvas(bitmap.width, bitmap.height).getContext("2d")!;
+    context.drawImage(bitmap, 0, 0);
+    const data = context.getImageData(0, 0, bitmap.width, bitmap.height).data;
+    let ink = 0;
+    for (let i = 0; i < data.length; i += 4) if (Math.abs(data[i] - 0x8c) + Math.abs(data[i + 1] - 0xfe) + Math.abs(data[i + 2] - 0xb8) > 60) ink++;
+    return ink / (data.length / 4);
+  }, png.toString("base64"));
 }
 
 for (const [quality, bubbles] of [["medium", "44"], ["high", "64"]] as const) {
@@ -248,7 +251,7 @@ test("a device with room to spare steps up from medium to high", async ({ page }
   expect((await log()).bubbles).toEqual(["24"]);
 });
 
-// High proved too slow once: back at medium the scene keeps it, however fast medium runs, rather than go back and forth.
+// Once high proved too slow, the scene stays at medium however fast it runs, instead of going back and forth.
 test("a tier the device was too slow for stays closed", async ({ page }) => {
   test.setTimeout(180_000);
   await page.setViewportSize({ width: 480, height: 360 });
@@ -364,19 +367,6 @@ test("the frame breathes when the back arrives, then holds still while you read"
   expect(await changedShare(page, c, d), "breathing").toBeGreaterThan(0.02);
 });
 
-// Share of a screenshot's pixels that are not the page's mint: the rings drawn there.
-async function inkShare(page: Page, png: Buffer) {
-  return page.evaluate(async (png) => {
-    const bitmap = await createImageBitmap(await (await fetch(`data:image/png;base64,${png}`)).blob());
-    const context = new OffscreenCanvas(bitmap.width, bitmap.height).getContext("2d")!;
-    context.drawImage(bitmap, 0, 0);
-    const data = context.getImageData(0, 0, bitmap.width, bitmap.height).data;
-    let ink = 0;
-    for (let i = 0; i < data.length; i += 4) if (Math.abs(data[i] - 0x8c) + Math.abs(data[i + 1] - 0xfe) + Math.abs(data[i + 2] - 0xb8) > 60) ink++;
-    return ink / (data.length / 4);
-  }, png.toString("base64"));
-}
-
 // Turning a window from desktop to phone while the back shows: the frame rebuilds around the new card, with the phone's
 // fewer bubbles, some of them above it. The page's static rings are hidden, so any ring above the card is the scene's.
 test("with the back showing, a resize frames the new card", async ({ page }) => {
@@ -395,14 +385,14 @@ test("with the back showing, a resize frames the new card", async ({ page }) => 
   expect(errors).toEqual([]);
 });
 
-// The bubbles are laid out around the card as the scene measures it, which has to be where the page draws it. Measured
-// from the wrong corner, the front's bubbles ring the real card and the frame forms around an empty spot.
 // Where the page draws the card, in the scene's data-scene-card format.
 const drawnCard = (page: Page) => page.locator("#card").evaluate((el) => {
   const r = el.getBoundingClientRect();
   return [r.x, r.y, r.width, r.height].map(Math.round).join(" ");
 });
 
+// The bubbles are laid out around the card as the scene measures it, which has to be where the page draws it. Measured
+// from the wrong corner, the front's bubbles ring the real card and the frame forms around an empty spot.
 test("the scene measures the card where the page draws it", async ({ page }) => {
   const drawn = () => drawnCard(page);
   await page.setViewportSize({ width: 1280, height: 800 });
@@ -463,11 +453,10 @@ test("a hidden tab stops the scene drawing until it shows again", async ({ page 
 
 // The canvas is decoration (aria-hidden): with the scene drawing, axe finds what it finds without it, nothing.
 test("axe finds nothing with the scene on, front and back", async ({ page }) => {
-  const violations = async () => (await new AxeBuilder({ page }).analyze()).violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(", ")}`);
   await sceneReady(page, "/?quality=medium&lock");
-  expect(await violations()).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
   await turnOver(page);
-  expect(await violations()).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 // Ink (non-mint pixels) per 40 px cell of the screen, outside the card: where the bubbles are.
