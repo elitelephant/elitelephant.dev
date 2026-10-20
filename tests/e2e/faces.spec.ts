@@ -40,6 +40,9 @@ test.describe("turning the card", () => {
     const button = page.locator("[data-flip]");
     await expect(button).toHaveText(site.front.flip, { useInnerText: true });
     await expect(button).toHaveAccessibleName(site.front.flip);
+    // The click below comes straight from the page. React replays a click that arrives before it hydrates, and the
+    // frames read until then would show the card at rest with its old name.
+    await expect(page.locator("#card")).toHaveAttribute("data-ready", "");
 
     // Every frame of the turn: the angle drawn, the label shown and the button's name, read together.
     const frames = await page.evaluate(() => new Promise<[number, string, string | null][]>((done) => {
