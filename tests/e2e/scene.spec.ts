@@ -173,14 +173,33 @@ test("on a phone the scene draws 24 bubbles", async ({ page }) => {
   await expect(html(page)).toHaveAttribute("data-bubbles", "24");
 });
 
-// three.js warns that Clock is deprecated whenever React Three Fiber builds its clock; the site drops that one warning.
-test("the scene loads without three.js's Clock warning", async ({ page }) => {
-  const warnings: string[] = [];
-  page.on("console", (m) => {
-    if (m.type() === "warning") warnings.push(m.text());
+// Moving the window to a screen with another pixel ratio resizes nothing, yet the canvas has to draw at the new ratio.
+// Headless Chromium changes devicePixelRatio but fires no resolution query, so the test fires the page's listeners.
+test("the canvas follows a change of pixel ratio", async ({ page }) => {
+  await page.addInitScript(() => {
+    const listeners: EventListener[] = [];
+    const match = window.matchMedia.bind(window);
+    window.matchMedia = (query: string) => {
+      const list = match(query);
+      if (query.startsWith("(resolution:")) {
+        const add = list.addEventListener.bind(list);
+        list.addEventListener = (type: string, listener: EventListener) => {
+          if (type === "change") listeners.push(listener);
+          add(type, listener);
+        };
+      }
+      return list;
+    };
+    Object.assign(window, { __resolutionChanged: () => listeners.splice(0).forEach((listener) => listener(new Event("change"))) });
   });
-  await sceneReady(page, "/?quality=medium&lock");
-  expect(warnings.filter((w) => w.includes("THREE.Clock"))).toEqual([]);
+  await page.setViewportSize({ width: 800, height: 600 });
+  await sceneReady(page, "/?quality=high&lock");
+  const width = () => page.locator(".scene canvas").evaluate((canvas: HTMLCanvasElement) => canvas.width);
+  expect(await width()).toBe(800);
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Emulation.setDeviceMetricsOverride", { width: 800, height: 600, deviceScaleFactor: 2, mobile: false });
+  await page.evaluate(() => (window as typeof window & { __resolutionChanged: () => void }).__resolutionChanged());
+  await expect.poll(width).toBe(1600);
 });
 
 // The ink above the card, from the bubbles drawn there.
@@ -517,8 +536,6 @@ test("a settled scene stops drawing until the pointer moves", async ({ page }) =
   const draws = await countDraws(page);
   await sceneReady(page, "/?quality=medium&lock");
   await expect(html(page)).toHaveAttribute("data-scene-loop", "paused", { timeout: SLOW });
-  // React Three Fiber draws one more frame on any change to its state, the pause included.
-  await page.waitForTimeout(500);
   const paused = await draws();
   await page.waitForTimeout(2000);
   expect(await draws(), "draw calls while paused").toBe(paused);

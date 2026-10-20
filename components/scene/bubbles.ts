@@ -10,6 +10,7 @@ import { BREATH_SCALE, breath, frameTarget, frontTarget, pace } from "./frame";
 import { bubbleCount, computeLayout, makeBalls, type Ball, type CardRect, type Layout } from "./layout";
 import { createRings } from "./rings";
 import { lightFrag, lightVert } from "./shaders";
+import type { Loop } from "./view";
 
 type Options = {
   gl: THREE.WebGLRenderer;
@@ -18,8 +19,7 @@ type Options = {
   count: number;
   reduce: boolean;
   invalidate: () => void;
-  // The renderer's frame loop, which draws every frame while "always" and only when asked while "demand".
-  loop: { get: () => string; set: (frameloop: "always" | "demand") => void };
+  loop: Pick<Loop, "get" | "set">;
 };
 
 type Mode = "scatter" | "gather";
@@ -71,8 +71,8 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate, lo
   let targets: THREE.Vector3[] = [];
   let mode: Mode = flipStore.get().flipped ? "gather" : "scatter";
   let breathAmount = 0;
-  // The scene's clock, in seconds, which runs only while it draws. three's clock starts over whenever the frame loop
-  // changes, so the time since the last interaction would come out wrong after a pause or a hidden tab.
+  // The scene's clock, in seconds, which runs only while it draws, so a pause or a hidden tab doesn't count as time
+  // since the last interaction.
   let time = 0;
   // The drift and breathing run on their own clock, which slows to a stop when nothing happens (see pace).
   let motionTime = 0;
@@ -273,7 +273,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate, lo
   canvas.addEventListener("pointercancel", onUp);
 
   // ---------- Resize: keep the bubbles unless the layout really changed ----------
-  // The window resizing reaches here through World; the card and its button can also change size on their own (a
+  // The window resizing reaches here through the view (./view); the card and its button can also change size on their own (a
   // larger text size, a font that arrives late), so their box is watched too. A card taller than the screen also
   // moves when the stage scrolls.
   const deck = (flipStore.get().cardEl ?? document.getElementById("card"))?.parentElement;

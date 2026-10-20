@@ -1,20 +1,11 @@
 "use client";
 
-import { Canvas } from "@react-three/fiber";
-import { useState } from "react";
-import { setConsoleFunction } from "three";
+import { useEffect, useRef, useState } from "react";
 import { BUBBLES, MAX_DPR } from "@/lib/quality";
 import type { LiveTier, Step } from "@/lib/quality-monitor";
-import { CAM_Z, FOV } from "./layout";
-import { Upkeep } from "./Upkeep";
-import { World } from "./World";
-
-// React Three Fiber 9.8 builds its clock with THREE.Clock, and three.js warns on every load that Clock is deprecated.
-// The warning is about the library, not this site, so only that message is dropped; every other one reaches the console.
-setConsoleFunction((type, message, ...params) => {
-  if (type === "warn" && message.startsWith("THREE.Clock: This module has been deprecated")) return;
-  console[type](message, ...params);
-});
+import { createBubbles } from "./bubbles";
+import { createUpkeep } from "./upkeep";
+import { createView, type View } from "./view";
 
 type Props = { tier: LiveTier; canRise: boolean; lock: boolean; onStep: (step: Step) => void };
 
@@ -22,22 +13,46 @@ type Props = { tier: LiveTier; canRise: boolean; lock: boolean; onStep: (step: S
 // With reduced motion nothing moves, so it renders only when something changes.
 export default function Scene({ tier, canRise, lock, onStep }: Props) {
   const [reduce] = useState(() => matchMedia("(prefers-reduced-motion: reduce)").matches);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [view, setView] = useState<View | null>(null);
+  const maxDpr = MAX_DPR[tier];
+  const count = BUBBLES[tier];
+
+  // The bubbles, made again when the tier changes their count.
+  useEffect(() => {
+    if (!view) return;
+    const { gl, scene, camera, loop } = view;
+    const world = createBubbles({ gl, scene, camera, count, reduce, invalidate: loop.invalidate, loop });
+    const unframe = view.onFrame((delta) => world.frame(delta));
+    const unresize = view.onResize(() => world.resize());
+    loop.invalidate();
+    return () => {
+      unframe();
+      unresize();
+      world.dispose();
+    };
+  }, [view, count, reduce]);
+
+  useEffect(() => {
+    if (!view) return;
+    return createUpkeep(view, { tier, canRise, reduce, lock, onStep });
+  }, [view, tier, canRise, reduce, lock, onStep]);
+
+  useEffect(() => view?.setMaxDpr(maxDpr), [view, maxDpr]);
+
+  // The renderer lasts as long as the scene, so a change of tier keeps it. Declared last, so it is also the last
+  // thing to go when the scene does.
+  const firstDpr = useRef(maxDpr);
+  useEffect(() => {
+    const created = createView(canvasRef.current!, boxRef.current!, reduce ? "demand" : "always", firstDpr.current);
+    setView(created);
+    return () => created.dispose();
+  }, [reduce]);
+
   return (
-    <Canvas
-      className="scene"
-      // Inline, because the Canvas sets position: relative on its own box inline, and no stylesheet rule outranks that.
-      style={{ position: "fixed", inset: 0 }}
-      aria-hidden="true"
-      flat
-      linear
-      dpr={[1, MAX_DPR[tier]]}
-      // No depth buffer. Every material skips the depth test, so one would only take memory and a clear per frame.
-      gl={{ antialias: false, depth: false, powerPreference: "high-performance" }}
-      camera={{ fov: FOV, position: [0, 0, CAM_Z], near: 0.1, far: 100 }}
-      frameloop={reduce ? "demand" : "always"}
-    >
-      <World count={BUBBLES[tier]} reduce={reduce} />
-      <Upkeep tier={tier} canRise={canRise} reduce={reduce} lock={lock} onStep={onStep} />
-    </Canvas>
+    <div className="scene" ref={boxRef} aria-hidden="true">
+      <canvas ref={canvasRef} />
+    </div>
   );
 }
