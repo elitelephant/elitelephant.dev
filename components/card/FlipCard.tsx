@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { flipStore, useStore } from "@/lib/flip-store";
+import { cutOut } from "./cutOut";
 import { useSpringFlip } from "./useSpringFlip";
 
 type Props = { label: string; backLabel: string; front: ReactNode; back: ReactNode; button: ReactNode };
@@ -32,6 +33,9 @@ export function FlipCard({ label, backLabel, front, back, button }: Props) {
     if (!deck || !card) return;
     card.dataset.ready = "";
     flipStore.set({ cardEl: card });
+    const front = card.querySelector<HTMLElement>("#front");
+    const line = front?.querySelector<HTMLElement>("h1 .now");
+    const uncut = front && line ? cutOut(front, line) : undefined;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && flipStore.get().flipped) flipStore.set({ flipped: false });
     };
@@ -49,6 +53,7 @@ export function FlipCard({ label, backLabel, front, back, button }: Props) {
     resize.observe(deck);
     if (stage) resize.observe(stage);
     return () => {
+      uncut?.();
       removeEventListener("keydown", onKey);
       resize.disconnect();
       document.documentElement.removeAttribute("data-tall");

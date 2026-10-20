@@ -12,6 +12,8 @@ for (const [width, height] of [[390, 844], [768, 1024], [1280, 800]] as const) {
     await page.setViewportSize({ width, height });
     await page.goto("/?quality=low");
     await page.evaluate(() => document.fonts.ready);
+    // The headline's second line is cut out of the paper once the font is in; the shot waits for it.
+    await expect(page.locator("#front")).toHaveAttribute("data-cut", "");
     const card = page.locator(".deck");
     await expect(card).toHaveScreenshot(`card-${width}x${height}-front.png`, { maxDiffPixelRatio: 0.002 });
     await page.getByRole("button", { name: text.flip }).click();

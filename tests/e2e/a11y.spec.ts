@@ -66,12 +66,13 @@ test("selected text is dark on mint", async ({ page }) => {
 
 // The card is printed on paper, an image, so axe can't tell the text's contrast over it and leaves it unchecked.
 // Measured here instead, in the lightest case: plain mint behind the see-through lines, no rings. On 99 % of the
-// paper, muted text keeps 4.5:1 or more; only stray light specks fall below.
+// paper, muted text keeps 4.5:1 or more; only stray light specks fall below. The headline's cut-out line is no paper
+// and no muted text sits on it, so its cut is taken out of the measure.
 test("muted text keeps 4.5:1 over the card's paper", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/?quality=low");
   const muted = await page.locator("#front .hi").evaluate((el) => getComputedStyle(el).color);
-  await page.addStyleTag({ content: "body::before { display: none !important; } #front * { color: transparent !important; }" });
+  await page.addStyleTag({ content: "body::before { display: none !important; } #front * { color: transparent !important; } #front::before { mask: none !important; }" });
   const card = (await page.locator("#front").boundingBox())!;
   const shot = await page.screenshot({ clip: { x: card.x + 40, y: card.y + 40, width: card.width - 80, height: card.height - 80 } });
   const ratio = await page.evaluate(async ({ png, muted }) => {

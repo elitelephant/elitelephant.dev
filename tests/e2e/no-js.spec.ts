@@ -18,6 +18,8 @@ test("without JavaScript the headline and every link work", async ({ page }) => 
   await page.goto("/");
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(`${site.front.watching} ${site.front.building}`);
+  // Nothing cuts its second line out of the card, so the line stays mint on it.
+  await expect(page.locator("h1 .now")).toHaveCSS("color", "rgb(140, 254, 184)");
 
   // Links to other sites open in a new tab and say so; an email link stays in the tab.
   const contact = page.getByRole("list", { name: site.contact.label });

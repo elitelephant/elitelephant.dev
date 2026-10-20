@@ -83,6 +83,21 @@ html[data-tall] .stage, .stage:has(> .notfound) { overflow-y: auto; }
 /* Greeting, headline and links as one block in the middle of the card, left-aligned. Its 0° turn pairs with the back's
    180°, so the two faces sit back to back. */
 .front { position: relative; transform: rotateY(0deg); padding: var(--pad-y) var(--pad-x); display: grid; align-content: center; row-gap: 22px; }
+/* The headline's second line is cut out of the paper, so the page and its bubbles show through its letters
+   (components/card/cutOut.ts draws the mask). The paper moves to a layer under the front's text, with the face's
+   border, so the mask takes the letters out of it and leaves the shadow and the rest of the text alone. Until the
+   mask is drawn, and without JavaScript, the line stays mint. */
+.front[data-cut] { background: none; border-color: transparent; }
+.front[data-cut]::before { content: ""; position: absolute; inset: -1px; z-index: -1; border: 1px solid var(--line); border-radius: inherit;
+  background: var(--paper-specks) center top / 288px 288px, var(--paper-lines) center top / 288px 288px;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.02) inset; mask: var(--cut) 0 0 / 100% 100% no-repeat; }
+.front[data-cut] h1 .now { color: transparent; }
+.front[data-cut] h1 .now::selection { color: var(--card); }
+/* High contrast repaints the card in system colours: the line goes back to plain text there. */
+@media (forced-colors: active) {
+  .front[data-cut]::before { mask: none; }
+  .front[data-cut] h1 .now { color: CanvasText; }
+}
 .hi { color: var(--muted); font-size: 1rem; letter-spacing: .005em; }
 h1 { align-self: center; font-size: 3rem; font-weight: 600; line-height: 1.04; letter-spacing: -.025em; text-wrap: balance; }
 h1 .now { display: block; color: var(--mint); margin-top: .12em; }
