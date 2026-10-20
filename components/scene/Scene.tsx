@@ -31,7 +31,8 @@ export default function Scene({ tier, canRise, lock, onStep }: Props) {
       flat
       linear
       dpr={[1, MAX_DPR[tier]]}
-      gl={{ antialias: false, powerPreference: "high-performance" }}
+      // No depth buffer: every material skips the depth test, so one would only take memory and a clear per frame.
+      gl={{ antialias: false, depth: false, powerPreference: "high-performance" }}
       camera={{ fov: FOV, position: [0, 0, CAM_Z], near: 0.1, far: 100 }}
       frameloop={reduce ? "demand" : "always"}
     >
