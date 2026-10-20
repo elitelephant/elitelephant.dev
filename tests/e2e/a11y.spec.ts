@@ -40,7 +40,7 @@ test.describe("in high contrast", () => {
   });
 });
 
-// Selected text takes the site's colours instead of the browser's blue: the card's dark on mint.
+// Selected text takes the site's colours, the card's dark on mint, instead of the browser's blue.
 test("selected text is dark on mint", async ({ page }) => {
   await page.goto("/?quality=low");
   const { selection, mint, card } = await page.evaluate(() => {
@@ -48,7 +48,7 @@ test("selected text is dark on mint", async ({ page }) => {
     return {
       selection: [s.backgroundColor, s.color],
       mint: getComputedStyle(document.querySelector("h1 .now")!).color,
-      // The card's colour, from the stylesheet: the card itself is printed on paper, an image.
+      // The card's colour, read from the stylesheet because the card itself is printed on paper, an image.
       card: (() => {
         const probe = document.body.appendChild(document.createElement("div"));
         probe.style.color = "var(--card)";
@@ -62,9 +62,9 @@ test("selected text is dark on mint", async ({ page }) => {
 });
 
 // The card is printed on paper, an image, so axe can't tell the text's contrast over it and leaves it unchecked.
-// Measured here instead, in the lightest case: plain mint behind the see-through lines, no rings. On 99 % of the
-// paper, muted text keeps 4.5:1 or more; only stray light specks fall below. The headline's cut-out line is no paper
-// and no muted text sits on it, so its cut is taken out of the measure.
+// Measured here instead, in the lightest case, with plain mint behind the see-through lines and no rings. On 99 % of
+// the paper, muted text keeps 4.5:1 or more; only stray light specks fall below. The headline's cut-out line is no
+// paper and no muted text sits on it, so its cut is taken out of the measure.
 test("muted text keeps 4.5:1 over the card's paper", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/?quality=low");

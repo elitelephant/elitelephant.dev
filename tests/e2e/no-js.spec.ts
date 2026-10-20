@@ -63,7 +63,7 @@ test("metadata is in the HTML", async ({ page }) => {
   expect(await meta('meta[property="og:url"]')).toBe(site.url);
   expect(await meta('meta[name="twitter:creator"]')).toBe(site.meta.twitterCreator);
 
-  // Absolute URLs on the site's own domain: the apps that draw a link preview don't resolve relative ones.
+  // Absolute URLs on the site's own domain, since the apps that draw a link preview don't resolve relative ones.
   const at = (route: string) => new RegExp(`^${site.url.replaceAll(".", "\\.")}/${route}\\b`);
   const alt = site.meta.ogAlt;
   expect(await meta('meta[property="og:image"]')).toMatch(at("opengraph-image"));
@@ -97,7 +97,7 @@ test("share image and icons are served", async ({ request }) => {
 const pngSize = (png: Buffer) => [png.readUInt32BE(16), png.readUInt32BE(20)];
 
 // The size apps expect for a link preview (1200×630) and for an iPhone home-screen icon (180×180), and share images
-// light enough for the apps to fetch: 300 KB at most.
+// of 300 KB at most, light enough for the apps to fetch.
 test("share images and icons have their real size, and the share images their weight", async ({ request }) => {
   for (const [url, width, height] of [
     ["/opengraph-image", 1200, 630],

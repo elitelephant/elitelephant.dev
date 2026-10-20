@@ -7,7 +7,7 @@ import { TILT, atRest, pastEdge, step } from "../../lib/spring.ts";
 
 const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-// Drives the card's transform outside React: one rAF loop that sleeps when the card is at rest.
+// Drives the card's transform outside React, with one rAF loop that sleeps when the card is at rest.
 export function createFlip(card: HTMLElement) {
   let spring = { angle: 0, vel: 0 };
   let target = 0;
@@ -21,8 +21,8 @@ export function createFlip(card: HTMLElement) {
   const render = () => {
     const angle = spring.angle + tilt.y;
     card.style.transform = `rotateX(${tilt.x.toFixed(2)}deg) rotateY(${angle.toFixed(2)}deg)`;
-    // The face turned away is hidden outright (globals.css): WebKit ignores backface-visibility and would show it
-    // mirrored through the other face. The switch happens edge-on, where neither face can be seen.
+    // The face turned away is hidden outright (globals.css), because WebKit ignores backface-visibility and would
+    // show it mirrored through the other face. The switch happens edge-on, where neither face can be seen.
     const facing = Math.abs(angle - 180) < 90 ? "back" : "front";
     if (facing !== side) {
       side = facing;
@@ -78,7 +78,7 @@ export function createFlip(card: HTMLElement) {
     setTarget(next: number) {
       if (next === target) return;
       target = next;
-      // A turn taken back before edge-on is already on its target's side: there's no edge left to pass.
+      // A turn taken back before edge-on is already on its target's side, so there's no edge left to pass.
       crossed = pastEdge(spring.angle, target);
       if (reducedMotion()) {
         cancelAnimationFrame(raf);

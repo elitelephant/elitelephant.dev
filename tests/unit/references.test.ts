@@ -6,7 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { problems } from "../../scripts/commit-msg.mjs";
 
-// Whoever reads this repo can follow every comment: no IDs from notes kept elsewhere, no paths to files not here.
+// Whoever reads this repo can follow every comment, with no IDs from notes kept elsewhere or paths to files not here.
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const tracked = execFileSync("git", ["ls-files", "-z"], { cwd: root, encoding: "utf8" }).split("\0").filter(Boolean);
 const files = tracked

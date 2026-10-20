@@ -24,11 +24,11 @@ type Mode = "scatter" | "gather";
 const KICK = 2.5; // the card passing edge-on pushes the air
 const REBUILD_MS = 150;
 // When the scene first shows, each bubble inflates from nothing in its own place, at its own moment, over the plain
-// mint the page starts on: it overshoots its size by about 17 % and settles, done within two seconds, well before the
-// scene settles at five. With reduced motion they are simply there.
+// mint the page starts on. It overshoots its size by about 17 % and settles, done within two seconds, well before the
+// scene settles at five. With reduced motion they are there from the start.
 const GROW_S = 0.85;
 const GROW_SPREAD = 1.1;
-const OVERSHOOT = 2.3; // the ease-out-back's constant: it swings about 17 % past full size
+const OVERSHOOT = 2.3; // the ease-out-back's constant, for a swing of about 17 % past full size
 const inflate = (x: number) => 1 + (OVERSHOOT + 1) * Math.pow(x - 1, 3) + OVERSHOOT * Math.pow(x - 1, 2);
 
 export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: Options) {
@@ -63,11 +63,11 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
   const wake = () => {
     activeAt = time;
   };
-  let still = false; // reduced motion: positions are worked out once per change, then left alone
+  let still = false; // with reduced motion, positions are worked out once per change, then left alone
 
   // Offsets ignore the card's turn and tilt. They're summed up to the fixed stage, because the card's own offset
-  // parent (the box with the perspective) doesn't start at the screen's corner. Less what each parent has scrolled:
-  // a card taller than the screen scrolls the stage, and the frame follows it there.
+  // parent (the box with the perspective) doesn't start at the screen's corner. Less what each parent has scrolled,
+  // since a card taller than the screen scrolls the stage and the frame follows it there.
   const onPage = (el: HTMLElement) => {
     let x = 0;
     let y = 0;
@@ -96,7 +96,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
     }
   }
 
-  // For tests: how the frame sits around the card (a ring, or strips where the screen has room), and where the scene
+  // Tells tests how the frame sits around the card (a ring, or strips where the screen has room), and where the scene
   // measured the card.
   function setLayout(card: CardRect) {
     layout = computeLayout(view(), card);
@@ -121,7 +121,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
     const growRnd = seeded(13);
     growDelay.length = 0;
     for (let i = 0; i < balls.length; i++) growDelay.push(growRnd() * GROW_SPREAD);
-    // Rebuilt while the back shows (a resize): start in the seats, apart, instead of flying in from the front.
+    // Rebuilt while the back shows (a resize), so start in the seats, apart, instead of flying in from the front.
     if (mode === "gather") {
       updateTargets(motionTime);
       engine.teleport(targets);
@@ -176,7 +176,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
     if (grabbing >= 0) return engine.drag(world);
     hover = e.pointerType === "mouse" || touchDown;
   };
-  // relatedTarget is null when the pointer leaves the window: stop pushing bubbles from the edge.
+  // relatedTarget is null when the pointer leaves the window, so stop pushing bubbles from the edge.
   const onOut = (e: PointerEvent) => {
     if (!e.relatedTarget) hover = false;
   };
@@ -205,7 +205,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
   };
   addEventListener("pointermove", onMove, { passive: true });
   addEventListener("pointerout", onOut);
-  // A touch anywhere counts, not only on the bubbles: on a phone a tap is often the only move there is.
+  // A touch anywhere counts, not only on the bubbles, since on a phone a tap is often the only move there is.
   addEventListener("pointerdown", wake);
   canvas.addEventListener("pointerdown", onDown);
   canvas.addEventListener("pointerup", onUp);
@@ -252,7 +252,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
     } else {
       const speed = pace(t - activeAt);
       motionTime += dt * speed;
-      // For tests: whether the drift and breathing have settled.
+      // Tells tests whether the drift and breathing have settled.
       if (moving !== speed > 0) {
         moving = speed > 0;
         root.dataset.sceneMotion = moving ? "moving" : "still";
@@ -280,7 +280,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
       }
     }
     rings.render(scene, camera);
-    // Only the first frame: when the scene steps down, SceneLoader sets "off" so the canvas fades out.
+    // Only on the first frame. When the scene steps down, SceneLoader sets "off" so the canvas fades out.
     if (!shown) {
       shown = true;
       root.dataset.scene = "ready";
@@ -290,7 +290,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate }: 
   build();
   root.dataset.sceneMode = mode;
   root.dataset.sceneMotion = "moving";
-  // For tests: whether the bubbles are still growing in. With reduced motion they are there from the start.
+  // Tells tests whether the bubbles are still growing in. With reduced motion they are there from the start.
   root.dataset.sceneGrowth = reduce ? "done" : "growing";
 
   // Nothing is drawn until the shaders are compiled; the first frame then sets data-scene="ready", which shows the

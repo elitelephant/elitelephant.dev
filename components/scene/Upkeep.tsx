@@ -12,7 +12,7 @@ function reportFps(fps: number) {
   dispatchEvent(new CustomEvent(FPS_EVENT, { detail: fps }));
 }
 
-// Keeps the scene affordable: stops drawing while the tab is hidden, and steps the quality down when the
+// Keeps the scene affordable. It stops drawing while the tab is hidden, and steps the quality down when the
 // frame rate can't keep up, or up when it has room (unless ?lock). With reduced motion it only draws on change, so
 // there is no rate to judge. Only time with the page in focus is judged (see lib/quality-monitor.ts).
 export function Upkeep({ tier, canRise, reduce, lock, onStep }: Props) {

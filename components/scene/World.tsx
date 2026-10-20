@@ -6,7 +6,7 @@ import { createBubbles } from "./bubbles";
 
 const MAX_DT = 1 / 20;
 
-// Hands the renderer to the world and takes over the frame loop (priority 1): light pass, then rings.
+// Hands the renderer to the world and takes over the frame loop (priority 1) to draw the light pass, then the rings.
 export function World({ count, reduce }: { count: number; reduce: boolean }) {
   const gl = useThree((s) => s.gl);
   const scene = useThree((s) => s.scene);

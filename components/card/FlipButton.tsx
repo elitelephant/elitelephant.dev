@@ -19,7 +19,7 @@ type Props = { front: string; back: string; backName: string };
 
 // One button under the card turns it either way. It stays put while the card turns, so it holds both labels and CSS
 // shows the one for the face in view, switching edge-on with the card (useSpringFlip sets data-side). Its name follows
-// the click instead: focus lands on it as the card heads back, and a screen reader should hear where it's going.
+// the click instead, since focus lands on it as the card heads back and a screen reader should hear where it's going.
 export function FlipButton({ front, back, backName }: Props) {
   const flipped = useStore((s) => s.flipped);
   return (

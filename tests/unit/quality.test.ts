@@ -42,6 +42,6 @@ test("a finger means medium at most, whatever the screen's width or way up", () 
 });
 
 test("a narrow window with a mouse is not a phone", () => {
-  // The probe has no width at all: the 760 px layout breakpoint has nothing to do with quality.
+  // The probe has no width at all, since the 760 px layout breakpoint has nothing to do with quality.
   assert.equal(pickQuality(null, laptop).start, "high");
 });

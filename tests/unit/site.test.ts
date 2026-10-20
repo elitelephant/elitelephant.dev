@@ -9,7 +9,7 @@ test("external links are https and the email link is mailto", () => {
   }
 });
 
-// Story first: it answers the button that turns the card, "Who’s behind this?".
+// Story first, since it answers the button that turns the card, "Who’s behind this?".
 test("panels are story, building and offline, in that order", () => {
   assert.deepEqual(site.back.panels.map((p) => p.id), ["story", "building", "offline"]);
 });
@@ -26,7 +26,7 @@ test("the back's name lists its panels in order", () => {
   assert.equal(site.back.panelsLabel.toLowerCase(), listed);
 });
 
-// Typographic apostrophes and quotes (’ “ ”) in every text: straight ones read as tick marks at the headline's size.
+// Typographic apostrophes and quotes (’ “ ”) in every text, as straight ones read as tick marks at the headline's size.
 test("copy uses typographic apostrophes and quotes", () => {
   const texts: string[] = [];
   const walk = (value: unknown, key = "") => {

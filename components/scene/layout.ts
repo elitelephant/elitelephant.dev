@@ -14,7 +14,7 @@ const NEAR = CAM_Z / (CAM_Z - 0.5); // how much bigger the nearest seats look
 // at this size; they sit partly behind the card and past the screen's edge instead (see freeSeat in ./frame).
 const MIN_STRIP_SCALE = 0.7;
 // Where the frame is a strip, the room around the card is a thin margin or two, and the 44 or 64 bubbles the quality
-// tiers draw crowded it: it gets STRIP_BUBBLES, and STRIP_SEATS of them frame the back while the rest wait behind
+// tiers draw crowded it. It gets STRIP_BUBBLES, and STRIP_SEATS of them frame the back while the rest wait behind
 // the card. With 12 seats on a phone upright, the strips are about as full as the ring around the card on a desktop.
 export const STRIP_BUBBLES = 24;
 export const STRIP_SEATS = 12;
@@ -22,7 +22,7 @@ export const STRIP_SEATS = 12;
 export type Box = { left: number; right: number; top: number; bottom: number };
 export type Side = "top" | "right" | "bottom" | "left";
 // around: the crowd circles the card (desktop). strip: the screen leaves room on one or two sides only (phones,
-// tablets, short landscape screens): fewer bubbles, and the back's frame loosens to all four sides (see ./frame).
+// tablets, short landscape screens), with fewer bubbles, and the back's frame loosens to all four sides (see ./frame).
 export type FrameShape = "around" | "strip";
 // room: from each edge of the card to the edge of the screen, in world units. free: the same, less the row the flip
 // button takes under the card; it decides which sides the frame uses.
@@ -41,12 +41,12 @@ export function computeLayout(view: View, card: CardRect): Layout {
     bottom: -(card.y + card.h - view.height / 2) * unit,
   };
   const room = { top: HALF_H - box.top, right: halfW - box.right, bottom: box.bottom + HALF_H, left: box.left + halfW };
-  // Bubbles may pass behind the flip button, but its row is no side to frame the card from: on a phone on its side,
+  // Bubbles may pass behind the flip button, but its row is no side to frame the card from. On a phone on its side,
   // counting it would turn the side strips into a ring and hide most of the front's bubbles behind the card.
   const free = { ...room, bottom: room.bottom - (card.below ?? 0) * unit };
   const open = Object.values(free).filter((r) => r > OPEN_ROOM).length;
-  // Rings need a few cells per bubble to read as bubbles, so small screens keep them fairly big: as big as the thinnest
-  // strip holds, up to 0.8, and never under MIN_STRIP_SCALE.
+  // Rings need a few cells per bubble to read as bubbles, so small screens keep them as big as the thinnest strip
+  // holds, up to 0.8 and never under MIN_STRIP_SCALE.
   if (open < 3) {
     const thinnest = Math.min(...Object.values(free).filter((r) => r > OPEN_ROOM));
     const fits = (thinnest - STRIP_GAP) / (2 * R_MAX * NEAR);
@@ -68,7 +68,7 @@ export type Ball = {
 // How many bubbles a layout gets out of the `tier` the quality allows.
 export const bubbleCount = (layout: Layout, tier: number) => (layout.shape === "strip" ? Math.min(tier, STRIP_BUBBLES) : tier);
 
-// The bubbles: scattered over the whole view, small ones more often. On a phone the card covers most of it, so many
+// The bubbles scatter over the whole view, small ones more often. On a phone the card covers most of it, so many
 // start behind the card, where the headline's cut-out line shows them drift past. Their seats around the card come in
 // shuffled order (sizes mix), each nudged along the edge; bigger ones lean a bit further back.
 export function makeBalls(layout: Layout, count: number): Ball[] {

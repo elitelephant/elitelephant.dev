@@ -6,8 +6,8 @@ import { dot, panelAtTop, text } from "./helpers";
 // get that area around them without changing how they look, and never from the text size; buttons are drawn 44 tall.
 test.use({ reducedMotion: "reduce" });
 
-// The targets matching `selector` whose area is smaller than size×size: some point within size/2 of the centre lands
-// on something else (a neighbour, or nothing).
+// The targets matching `selector` whose area is smaller than size×size, meaning some point within size/2 of the
+// centre lands on something else (a neighbour, or nothing).
 async function tooSmall(page: Page, selector: string, size: number) {
   return page.evaluate(([selector, size]) => {
     const reach = size / 2 - 1;

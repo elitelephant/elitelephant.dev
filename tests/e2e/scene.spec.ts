@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { axeViolations, collectErrors, expectAngle, loadWithTier, moveAway, ringsShown, setTextSize, text, threeLoaded } from "./helpers";
 
-// One WebGL page at a time: on SwiftShader the CPU draws every frame, and parallel pages starve each other. The
+// One WebGL page at a time, since on SwiftShader the CPU draws every frame and parallel pages starve each other. The
 // tests run in order in one worker; unlike serial mode, a failure doesn't skip the ones after it.
 // At a few frames per second a test here can take well over the default 30 s.
 test.describe.configure({ mode: "default", timeout: 60_000 });
@@ -24,7 +24,7 @@ async function turnOver(page: Page) {
 }
 
 // The page's clock moves a fixed 1000/fps ms per animation frame, so the quality monitor measures exactly `fps`
-// however fast or slow the machine running the test really draws: a device that holds the scene at that rate.
+// however fast or slow the machine running the test really draws, as on a device that holds the scene at that rate.
 // Between frames it runs as usual, stopping short of the next frame's tick so it never goes backwards.
 // setFrameRate changes the rate on a page that is already running.
 async function frameRate(page: Page, fps: number) {
@@ -88,7 +88,7 @@ async function recordScene(page: Page) {
   return () => page.evaluate(() => (window as typeof window & { __sceneLog: SceneLog }).__sceneLog);
 }
 
-// Share of pixels that differ between two screenshots. The page decodes them: Node has no PNG decoder built in.
+// Share of pixels that differ between two screenshots. The page decodes them, since Node has no PNG decoder built in.
 async function changedShare(page: Page, a: Buffer, b: Buffer) {
   return page.evaluate(async ([a, b]) => {
     const pixels = async (png: string) => {
@@ -104,7 +104,7 @@ async function changedShare(page: Page, a: Buffer, b: Buffer) {
   }, [a.toString("base64"), b.toString("base64")] as const);
 }
 
-// Share of a screenshot's pixels that are not the page's mint: the rings drawn there.
+// Share of a screenshot's pixels covered by rings, counted as those that are not the page's mint.
 async function inkShare(page: Page, png: Buffer) {
   return page.evaluate(async (png) => {
     const bitmap = await createImageBitmap(await (await fetch(`data:image/png;base64,${png}`)).blob());
@@ -125,7 +125,7 @@ for (const [quality, bubbles] of [["medium", "44"], ["high", "64"]] as const) {
     await expect(page.locator(".scene canvas")).toBeVisible();
 
     await turnOver(page);
-    // Escape, not the Back button: at a few frames per second a click can land on a card that is still turning.
+    // Escape, not the Back button, because at a few frames per second a click can land on a card that is still turning.
     await page.keyboard.press("Escape");
     await expect(html(page)).toHaveAttribute("data-scene-mode", "scatter");
     expect(errors).toEqual([]);
@@ -150,7 +150,7 @@ test("the scene loads without three.js's Clock warning", async ({ page }) => {
   expect(warnings.filter((w) => w.includes("THREE.Clock"))).toEqual([]);
 });
 
-// The ink above the card: the bubbles drawn there.
+// The ink above the card, from the bubbles drawn there.
 async function inkAboveCard(page: Page) {
   const top = await page.locator("#card").evaluate((el) => el.getBoundingClientRect().top);
   const { width } = page.viewportSize()!;
@@ -193,7 +193,7 @@ test("?scene=0 leaves only the static rings, without downloading the 3D code", a
   await expect.poll(() => ringsShown(page)).toBe(1);
 });
 
-// The scene's renderer gets no WebGL context although the device check got one (a lost GPU, a crashed driver): the
+// The scene's renderer gets no WebGL context although the device check got one (a lost GPU, a crashed driver). The
 // scene goes, the page counts as low, and the card still turns.
 test("if the scene breaks, the page drops to low and the card still turns", async ({ page }) => {
   await page.addInitScript(() => {
@@ -222,14 +222,14 @@ test("low quality keeps the static rings, without downloading the 3D code", asyn
 });
 
 test("a device too slow for the scene steps down to medium, then fades it out for the static rings", async ({ page }) => {
-  // About 180 frames: on a machine that draws SwiftShader at a few frames per second, that takes a while.
+  // About 180 frames, which take a while on a machine that draws SwiftShader at a few frames per second.
   test.setTimeout(120_000);
   const errors = collectErrors(page);
   const log = await recordScene(page);
   await frameRate(page, TOO_SLOW);
   await page.goto("/?quality=high");
   expect(await page.evaluate(() => document.hasFocus()), "a page without focus is not judged").toBe(true);
-  // "low" first: the tier the page starts with, before it picks one.
+  // "low" comes first, as the tier the page starts with before it picks one.
   await expect.poll(async () => (await log()).tiers, { timeout: 100_000 }).toEqual(["low", "high", "medium", "low"]);
   expect((await log()).bubbles).toEqual(["64", "44"]);
   await expect(page.locator(".scene")).toHaveCount(0);
@@ -276,12 +276,12 @@ test.describe("on a touch screen", () => {
     const log = await recordScene(page);
     await frameRate(page, 60);
     await sceneReady(page, "/?quality=medium");
-    // The warm-up and five windows: longer than stepping up takes on a machine with a mouse.
+    // The warm-up and five windows, longer than stepping up takes on a machine with a mouse.
     await expect.poll(async () => (await log()).fpsReports, { timeout: 100_000 }).toBeGreaterThanOrEqual(6);
     expect((await log()).tiers).toEqual(["low", "medium"]);
   });
 
-  // On a phone a tap is the whole interaction: a tap on the card, not only on the bubbles, brings the motion back.
+  // On a phone a tap is the whole interaction, so a tap on the card, not only on the bubbles, brings the motion back.
   test("a tap on the card wakes the settled motion", async ({ page }) => {
     test.setTimeout(120_000);
     await sceneReady(page, "/?quality=medium&lock");
@@ -327,8 +327,8 @@ test("?lock keeps the tier on a device too slow for it", async ({ page }) => {
 });
 
 // After the drift and breathing settle (within 5 s, WCAG 2.2.2) the bubbles still come to rest, which on SwiftShader
-// takes seconds more, so shots 1.2 s apart are compared until they barely differ: under 0.3% of the pixels at rest
-// with the pointer in a corner, against about 6% while the frame breathes.
+// takes seconds more, so shots 1.2 s apart are compared until they barely differ. At rest, with the pointer in a
+// corner, under 0.3% of the pixels change, against about 6% while the frame breathes.
 async function comesToRest(page: Page) {
   await expect.poll(async () => {
     const a = await page.screenshot();
@@ -367,8 +367,9 @@ test("the frame breathes when the back arrives, then holds still while you read"
   expect(await changedShare(page, c, d), "breathing").toBeGreaterThan(0.02);
 });
 
-// Turning a window from desktop to phone while the back shows: the frame rebuilds around the new card, with the phone's
-// fewer bubbles, some of them above it. The page's static rings are hidden, so any ring above the card is the scene's.
+// Turning a window from desktop to phone while the back shows rebuilds the frame around the new card, with the
+// phone's fewer bubbles, some of them above it. The page's static rings are hidden, so any ring above the card is
+// the scene's.
 test("with the back showing, a resize frames the new card", async ({ page }) => {
   const errors = collectErrors(page);
   await page.setViewportSize({ width: 1280, height: 800 });
@@ -403,7 +404,7 @@ test("the scene measures the card where the page draws it", async ({ page }) => 
   await expect(html(page)).toHaveAttribute("data-scene-card", await drawn());
 });
 
-// The card can change size with the window untouched: the reader sets a larger text size, or a font arrives late.
+// The card can change size with the window untouched, when the reader sets a larger text size or a font arrives late.
 // The scene measures it again, so the frame sits around the card the page draws.
 test("the scene measures the card again when it grows without a resize", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
@@ -451,7 +452,7 @@ test("a hidden tab stops the scene drawing until it shows again", async ({ page 
   await expect(html(page)).toHaveAttribute("data-scene", "ready");
 });
 
-// The canvas is decoration (aria-hidden): with the scene drawing, axe finds what it finds without it, nothing.
+// The canvas is decoration (aria-hidden), so with the scene drawing axe finds what it finds without it, nothing.
 test("axe finds nothing with the scene on, front and back", async ({ page }) => {
   await sceneReady(page, "/?quality=medium&lock");
   expect(await axeViolations(page)).toEqual([]);
@@ -459,7 +460,7 @@ test("axe finds nothing with the scene on, front and back", async ({ page }) => 
   expect(await axeViolations(page)).toEqual([]);
 });
 
-// Ink (non-mint pixels) per 40 px cell of the screen, outside the card: where the bubbles are.
+// Ink (non-mint pixels) per 40 px cell of the screen, outside the card, to find where the bubbles are.
 async function inkCells(page: Page) {
   const card = (await page.locator("#card").boundingBox())!;
   const png = (await page.screenshot()).toString("base64");
@@ -492,7 +493,7 @@ const inkAt = async (page: Page, x: number, y: number) =>
   (await inkCells(page)).find((c) => Math.abs(c.x - x) < 20 && Math.abs(c.y - y) < 20)?.ink ?? 0;
 
 // A bubble can be grabbed, dragged to an empty spot and thrown; let go, it doesn't stay there but finds its way back
-// among the others. Judged by what the canvas shows: the page's static rings are hidden, so the ink is the bubbles'.
+// among the others. Judged by what the canvas shows. The page's static rings are hidden, so the ink is the bubbles'.
 // A bubble's light reaches past its edge, so the inkiest spots are tried in turn until one holds a bubble.
 test("a bubble can be grabbed, dragged and thrown, and goes back to its place", async ({ page }) => {
   test.setTimeout(120_000);

@@ -11,7 +11,7 @@ export function cutOut(face: HTMLElement, line: HTMLElement) {
   let stopped = false;
 
   const draw = () => {
-    // Measured flat: the card's turn and tilt would skew the letters' boxes.
+    // Measured flat, since the card's turn and tilt would skew the letters' boxes.
     const transform = card.style.transform;
     card.style.transform = "none";
     const box = face.getBoundingClientRect();

@@ -10,8 +10,8 @@
      specks over them. Printed on the flip button as well. */
   --paper-lines: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='288' height='288'><mask id='k'><rect width='288' height='288' fill='%23fff'/><pattern id='l' width='6' height='6' patternUnits='userSpaceOnUse'><rect width='6' height='1' fill='%23000' opacity='.12'/></pattern><rect width='288' height='288' fill='url(%23l)'/><pattern id='c' width='48' height='6' patternUnits='userSpaceOnUse'><rect width='1' height='6' fill='%23000' opacity='.18'/></pattern><rect width='288' height='288' fill='url(%23c)'/></mask><rect width='288' height='288' fill='%230b100e' mask='url(%23k)'/></svg>");
   --paper-specks: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='288' height='288'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' seed='1' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 1.4 0 0 0 -.6'/></filter><rect width='288' height='288' filter='url(%23g)' opacity='.22'/></svg>");
-  /* The smallest area a pointer can hit reliably: 24 px with a mouse, 44 px with a finger. Links and dots get theirs
-     without changing how they look, and never from the text size. */
+  /* The smallest area a pointer can hit reliably is 24 px with a mouse and 44 px with a finger. Links and dots get
+     theirs without changing how they look, and never from the text size. */
   --hit: 24px;
   --dot-x: 35px; /* from the card's right edge to the centre of the dots, in the margin .panel keeps clear for them */
   /* The flip button under the card (44 px, its min-height) and the gap above it. */
@@ -36,7 +36,7 @@ html[data-backdrop="rings"]:not([data-scene="ready"]) body::before { opacity: 1;
 /* The 404 never gets the scene, so it shows the rings from the start, as it does without JavaScript. */
 body:has(.notfound)::before { opacity: 1; }
 a { color: var(--mint); text-decoration: none; text-underline-offset: 3px; }
-/* Only where a pointer hovers: after a tap, a touch screen would keep the link underlined. */
+/* Only where a pointer hovers. After a tap, a touch screen would keep the link underlined. */
 @media (hover: hover) {
   a:hover { text-decoration: underline; }
 }
@@ -58,7 +58,8 @@ html[data-scene="ready"] .scene { opacity: 1; transition: none; }
 /* safe center keeps a card taller than the stage reachable from its top; plain center first, for older browsers. */
 .stage { position: fixed; inset: 0; display: grid; place-items: center; place-items: safe center; pointer-events: none;
   padding: 16px max(16px, env(safe-area-inset-right)) var(--stage-bottom) max(16px, env(safe-area-inset-left)); }
-/* Scrolls only a card taller than the screen (FlipCard sets data-tall): mid-turn, the turning card would flash a scrollbar. */
+/* Scrolls only a card taller than the screen (FlipCard sets data-tall), since a stage that always scrolled would flash a
+   scrollbar mid-turn. */
 html[data-tall] .stage, .stage:has(> .notfound) { overflow-y: auto; }
 /* The card and, under it, the button that turns it. The perspective sits here, on the card's parent, centred on the
    card rather than on the card and button together, so the turn stays even top to bottom. A size container, so the
@@ -69,9 +70,9 @@ html[data-tall] .stage, .stage:has(> .notfound) { overflow-y: auto; }
 .card { position: relative; display: grid; transform-style: preserve-3d; pointer-events: auto; will-change: transform;
   min-height: min(456px, calc(100vh - 16px - var(--stage-bottom) - var(--below)));
   min-height: min(456px, calc(100svh - 16px - var(--stage-bottom) - var(--below))); }
-/* The card stock is laid paper held up to the light: the card's colour is painted through a mask that thins it along a
-   line every 6 px and a chain line every 48 px, so the page and its bubbles show faintly through them, with fine light
-   specks on top. Centred, so the narrower columns at the edges match. Inline, so the card never shows without it.
+/* The card stock is laid paper held up to the light. The card's colour is painted through a mask that thins it along
+   a line every 6 px and a chain line every 48 px, so the page and its bubbles show faintly through them, with fine
+   light specks on top. Centred, so the narrower columns at the edges match. Inline, so the card never shows without it.
    The tile is 288 px, a multiple of both 6 and 48, so it repeats without a seam. The lines take .12 of the card's
    colour away and the chain lines .18; the specks are white at .22. Muted text stays above 4.5:1 on all but stray
    specks (5.3:1 on 99 % of the paper, with plain mint behind). */
@@ -93,7 +94,7 @@ html[data-tall] .stage, .stage:has(> .notfound) { overflow-y: auto; }
   box-shadow: 0 0 0 1px rgba(255,255,255,.02) inset; mask: var(--cut) 0 0 / 100% 100% no-repeat; }
 .front[data-cut] h1 .now { color: transparent; }
 .front[data-cut] h1 .now::selection { color: var(--card); }
-/* High contrast repaints the card in system colours: the line goes back to plain text there. */
+/* High contrast repaints the card in system colours, so the line goes back to plain text there. */
 @media (forced-colors: active) {
   .front[data-cut]::before { mask: none; }
   .front[data-cut] h1 .now { color: CanvasText; }
@@ -108,17 +109,17 @@ h1 .now { display: block; color: var(--mint); margin-top: .12em; }
 .links a, .notfound a { position: relative; }
 .links a::before, .notfound a::before { content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, var(--hit)); height: max(100%, var(--hit)); transform: translate(-50%, -50%); }
 
-/* On the mint page, under the card's right edge: on the card's paper, so it reads with bubbles passing behind it. Its
-   chain lines continue the card's: the card centres its tile and the button's right edge is the card's, so the
+/* On the mint page, under the card's right edge, and on the card's paper so it reads with bubbles passing behind it.
+   Its chain lines continue the card's. The card centres its tile and the button's right edge is the card's, so the
    button's tile starts half the card's width (50cqw) to the left of centre, plus the 1 px borders. */
 .flip { justify-self: end; pointer-events: auto; display: inline-flex; align-items: center; gap: 8px; min-height: 44px;
   background: var(--paper-specks) calc(100% + 145px - 50cqw) top / 288px 288px,
     var(--paper-lines) calc(100% + 145px - 50cqw) top / 288px 288px; color: var(--mint);
   border: 1px solid rgba(140,254,184,.42); border-radius: 999px; padding: 10px 18px; font: 500 .875rem var(--font); cursor: pointer;
   box-shadow: 0 14px 30px -16px rgba(0,0,0,.7), inset 0 0 0 100vmax rgba(140,254,184,0); transition: box-shadow .2s, border-color .2s; }
-/* Only where a pointer hovers: after a tap, a touch screen would keep the button lit on the other face. */
+/* Only where a pointer hovers. After a tap, a touch screen would keep the button lit on the other face. */
 @media (hover: hover) {
-  /* A mint tint over the paper, as an inset shadow: it fades, where a gradient laid over the paper wouldn't. */
+  /* A mint tint over the paper, as an inset shadow, which fades where a gradient laid over the paper wouldn't. */
   .flip:hover { box-shadow: 0 14px 30px -16px rgba(0,0,0,.7), inset 0 0 0 100vmax rgba(140,254,184,.08); border-color: rgba(140,254,184,.7); }
 }
 /* A mint ring would vanish against the mint page. */
@@ -152,8 +153,8 @@ h1 .now { display: block; color: var(--mint); margin-top: .12em; }
 /* pretty keeps a word from sitting alone on a paragraph's last line. */
 p { color: var(--muted); line-height: 1.62; font-size: 1rem; margin-bottom: 12px; max-width: 60ch; text-wrap: pretty; }
 .panel p { font-size: calc(1rem * var(--fit, 1)); margin-bottom: calc(12px * var(--fit, 1)); }
-/* The last panel: "Say hi." large over the links, in the middle of the card on every screen. The two classes outrank
-   the phone and landscape rules that start the other panels at the top. */
+/* The last panel shows "Say hi." large over the links, in the middle of the card on every screen. The two classes
+   outrank the phone and landscape rules that start the other panels at the top. */
 .panel.say-hi { justify-content: safe center; }
 .say-hi .say { font-size: calc(2.75rem * var(--fit, 1)); font-weight: 600; line-height: 1.04; letter-spacing: -.025em; color: var(--text);
   margin-bottom: calc(22px * var(--fit, 1)); }
@@ -165,7 +166,7 @@ p { color: var(--muted); line-height: 1.62; font-size: 1rem; margin-bottom: 12px
 .panels[data-tight] .panel p { line-height: 1.45; margin-bottom: calc(8px * var(--fit, 1)); }
 .panels[data-tight] .label { margin-bottom: calc(9px * var(--fit, 1)); }
 .panels[data-tight] .say-hi .say { margin-bottom: calc(14px * var(--fit, 1)); }
-/* A panel that still doesn't fit reads to its end: soft snapping, and a bottom edge that fades while more is below. */
+/* A panel that still doesn't fit reads to its end, with soft snapping and a fading bottom edge while more is below. */
 .panels[data-overflow] { scroll-snap-type: y proximity; }
 .panels[data-overflow] .panel { scroll-snap-stop: normal; }
 .panels[data-more] { mask-image: linear-gradient(to bottom, #000 calc(100% - 44px), transparent); }
@@ -182,8 +183,8 @@ p { color: var(--muted); line-height: 1.62; font-size: 1rem; margin-bottom: 12px
 @media (hover: hover) and (forced-colors: none) {
   .dots button:not([aria-current="true"]):hover::before { background: var(--text); }
 }
-/* High contrast swaps every background for the system's, which would wipe out the dots: paint them in its text
-   colour, and the current one in its highlight. */
+/* High contrast swaps every background for the system's, which would wipe out the dots, so they take its text
+   colour, and the current one its highlight. */
 @media (forced-colors: active) {
   .dots button::before { forced-color-adjust: none; background: CanvasText; }
   .dots button[aria-current="true"]::before { background: Highlight; }
@@ -211,14 +212,15 @@ p { color: var(--muted); line-height: 1.62; font-size: 1rem; margin-bottom: 12px
   .label { margin-bottom: calc(12px * var(--fit, 1)); }
   .say-hi .say { font-size: calc(2.25rem * var(--fit, 1)); }
 }
-/* Under about 330 px, "watching from" no longer fits one line and "from" would sit alone: a slightly smaller headline. */
+/* Under about 330 px, "watching from" no longer fits one line and "from" would sit alone, so the headline gets
+   slightly smaller. */
 @media (max-width: 340px) {
   h1 { font-size: clamp(1.875rem, .375rem + 8.4vw, 2.75rem); }
 }
 @media (max-width: 760px) and (orientation: portrait) {
   body::before { background-image: url(/fallback/rings-tall.webp); }
 }
-/* Short landscape phones: let the card use the full height, less the button under it. A phone up to 760 px wide also
+/* On short landscape phones the card takes the full height, less the button under it. A phone up to 760 px wide also
    matches the block above; this one comes after it, so its values win. */
 @media (max-height: 520px) and (min-width: 560px) {
   .deck { width: min(640px, 68vw); }
@@ -231,8 +233,8 @@ p { color: var(--muted); line-height: 1.62; font-size: 1rem; margin-bottom: 12px
   h1 { font-size: 2rem; }
   :root { --pad-y: 22px; }
 }
-/* The smallest of them, an old iPhone sideways: a smaller headline and, once the back's spacing tightens, less room
-   above its panels, so neither face scrolls. */
+/* The smallest of them, an old iPhone sideways, gets a smaller headline and, once the back's spacing tightens, less
+   room above its panels, so neither face scrolls. */
 @media (max-height: 340px) and (min-width: 560px) {
   h1 { font-size: 1.75rem; }
   .panels[data-tight] { --panel-top: 10px; }

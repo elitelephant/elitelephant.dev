@@ -8,7 +8,7 @@ import { useSpringFlip } from "./useSpringFlip";
 type Props = { label: string; backLabel: string; front: ReactNode; back: ReactNode; button: ReactNode };
 
 // The hidden face is inert and aria-hidden, so it gets no focus and screen readers skip it.
-// Without JavaScript the card can't turn, so only the front shows: the back is rendered inert (its text stays in
+// Without JavaScript the card can't turn, so only the front shows. The back is rendered inert (its text stays in
 // the HTML) and the flip button is hidden.
 export function FlipCard({ label, backLabel, front, back, button }: Props) {
   const deckRef = useRef<HTMLDivElement>(null);
@@ -16,7 +16,7 @@ export function FlipCard({ label, backLabel, front, back, button }: Props) {
   const flipped = useStore((s) => s.flipped);
   useSpringFlip(cardRef, flipped);
 
-  // Focus follows the turn: the panels when the back shows, the flip button when the front returns.
+  // Focus follows the turn, to the panels when the back shows and to the flip button when the front returns.
   const shown = useRef(flipped);
   useLayoutEffect(() => {
     if (shown.current === flipped) return;

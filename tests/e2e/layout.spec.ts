@@ -62,7 +62,7 @@ for (const [width, height] of SIZES) {
     inside(dots, card, "dots");
     underCard((await boxes(page, "[data-flip]"))[0], card, screen, "flip button on the back");
 
-    // Every panel, scrolled into place: its text stays inside the card and clear of the dots.
+    // Every panel, scrolled into place, keeps its text inside the card and clear of the dots.
     for (const [i, { id, label }] of [...site.back.panels, { id: "say-hi", label: site.back.sayHi.label }].entries()) {
       await dot(page, i).click();
       await expect(page.getByRole("heading", { level: 2, name: label })).toBeInViewport();
@@ -93,9 +93,9 @@ for (const [name, { view, card }] of Object.entries(CARDS)) {
   });
 }
 
-// With the reader's settings untouched, nothing scrolls: not the page, not a panel. The back's spacing tightens and
-// then its text shrinks to fit the card (down to about 12.5 px, or 10.3 px on a phone turned sideways); labels stop
-// at 11 px.
+// With the reader's settings untouched, neither the page nor a panel scrolls. The back's spacing tightens and then
+// its text shrinks to fit the card (down to about 12.5 px, or 10.3 px on a phone turned sideways); labels stop at
+// 11 px.
 for (const [width, height] of SIZES) {
   test(`nothing scrolls at ${width}x${height}`, async ({ page }) => {
     await page.setViewportSize({ width, height });
@@ -115,8 +115,8 @@ for (const [width, height] of SIZES) {
   });
 }
 
-// An iPhone with no home button keeps its home indicator clear under the stage: on its side that inset is 21 px, more
-// than the stage's usual 16, and the card gives up the difference. Chromium only: it can set the safe-area insets.
+// An iPhone with no home button keeps its home indicator clear under the stage. On its side that inset is 21 px, more
+// than the stage's usual 16, and the card gives up the difference. Chromium only, as it can set the safe-area insets.
 test("on an iPhone on its side, the card and the button fit above the home indicator", async ({ page }) => {
   await page.setViewportSize({ width: 844, height: 390 });
   const cdp = await page.context().newCDPSession(page);
@@ -129,7 +129,7 @@ test("on an iPhone on its side, the card and the button fit above the home indic
   await expect(page.locator("html")).not.toHaveAttribute("data-tall");
 });
 
-// On the common large phones, tablets and desktops the back's text keeps its full size: the spacing gives way first.
+// On the common large phones, tablets and desktops the back's text keeps its full size, as the spacing gives way first.
 for (const [width, height] of [[390, 844], [414, 896], [430, 932], [768, 1024], [1280, 800]] as const) {
   test(`the back's text keeps its size at ${width}x${height}`, async ({ page }) => {
     await page.setViewportSize({ width, height });
@@ -161,7 +161,7 @@ for (const [width, height] of SIZES) {
   });
 }
 
-// Turning a phone or resizing a window while reading the back: the same panel stays in view, its text fits the new
+// Turning a phone or resizing a window while reading the back keeps the same panel in view. Its text fits the new
 // card again, the dots stay on the card and the flip button under it.
 test("with the back showing, a resize keeps the panel and fits the text again", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
@@ -238,21 +238,21 @@ for (const [width, height] of [[320, 568], [360, 800], [375, 667], [390, 844], [
   });
 }
 
-// On a phone on its side, wide or narrow, each panel starts at the top: the label sits at the same height on all of
+// On a phone on its side, wide or narrow, each panel starts at the top, so the label sits at the same height on all of
 // them, as on a phone held upright, instead of moving with each panel's length.
 for (const [width, height] of [[667, 375], [844, 390], [932, 430]] as const) {
   test(`on its side, the panel label stays at the same height at ${width}x${height}`, async ({ page }) => {
     await page.setViewportSize({ width, height });
     await page.goto("/?quality=low");
     await page.evaluate(() => document.fonts.ready);
-    // "Say hi." has no label: its panel sits in the middle of the card on every screen.
+    // "Say hi." has no label, and its panel sits in the middle of the card on every screen.
     const tops = await page.locator(".panel:has(> .label)").evaluateAll((panels) =>
       panels.map((panel) => Math.round((panel.querySelector<HTMLElement>(".label")!.offsetTop - (panel as HTMLElement).offsetTop))));
     expect(new Set(tops).size, `label tops ${tops}`).toBe(1);
   });
 }
 
-// The flip button is printed on the card's paper, and its chain lines (every 48 px) continue the card's: the start of
+// The flip button is printed on the card's paper, and its chain lines (every 48 px) continue the card's. The start of
 // its paper tile and the card's are a whole number of chain lines apart, wherever the card's width puts its centre.
 for (const [width, height] of [[1280, 800], [1024, 768], [390, 844], [320, 568], [844, 390]] as const) {
   test(`the flip button's paper lines up with the card's at ${width}x${height}`, async ({ page }) => {

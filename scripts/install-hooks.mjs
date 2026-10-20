@@ -6,6 +6,6 @@ if (!process.env.CI && !process.env.VERCEL) {
   try {
     execFileSync('git', ['config', 'core.hooksPath', '.githooks'], { stdio: 'ignore' });
   } catch {
-    // Not a git checkout: nothing to install.
+    // Not a git checkout, so nothing to install.
   }
 }

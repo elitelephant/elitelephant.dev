@@ -105,7 +105,7 @@ test.describe("with motion", () => {
   });
 });
 
-// A finger has no hover: touching the card doesn't tilt it, and a tap on the button turns it with the spring.
+// A finger has no hover. Touching the card doesn't tilt it, and a tap on the button turns it with the spring.
 test.describe("on a touch screen", () => {
   test.use({ reducedMotion: "no-preference", hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
 
@@ -128,7 +128,7 @@ test.describe("on a touch screen", () => {
     await expect.poll(() => cardAngle(page)).toBeGreaterThan(0);
     await expectAngle(page, 180);
     expect((await cardTransform(page)).tilt).toBe(0);
-    // The button stays under the card, and the finger that tapped it leaves it unlit: its hover is for a mouse.
+    // The button stays under the card, and the finger that tapped it leaves it unlit, since its hover is for a mouse.
     expect(await page.locator("[data-flip]").evaluate((el) => getComputedStyle(el).boxShadow)).toBe(unlit);
     await page.getByRole("button", { name: text.flipBack }).tap();
     await expectAngle(page, 0);

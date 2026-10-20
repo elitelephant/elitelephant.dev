@@ -1,4 +1,4 @@
-// Run by .githooks/commit-msg. A commit message has to make sense on its own: no decision IDs (D-nnnn) and no
+// Run by .githooks/commit-msg. A commit message has to make sense on its own, without decision IDs (D-nnnn) or
 // ticket numbers (#nn), which point at notes that are not in this repo (and #nn would link a GitHub issue).
 import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";

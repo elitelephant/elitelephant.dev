@@ -17,7 +17,7 @@ export function Panel({ panel }: { panel: PanelContent }) {
   );
 }
 
-// The last panel: "Say hi." as its heading, over the contact links.
+// The last panel, with "Say hi." as its heading over the contact links.
 export function SayHiPanel({ text }: { text: string }) {
   return (
     <section className="panel say-hi" id="say-hi" aria-labelledby="h-say-hi">

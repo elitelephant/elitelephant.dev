@@ -25,13 +25,13 @@ export default function Scene({ tier, canRise, lock, onStep }: Props) {
   return (
     <Canvas
       className="scene"
-      // Inline: the Canvas sets position: relative on its own box inline, which no stylesheet rule outranks.
+      // Inline, because the Canvas sets position: relative on its own box inline, and no stylesheet rule outranks that.
       style={{ position: "fixed", inset: 0 }}
       aria-hidden="true"
       flat
       linear
       dpr={[1, MAX_DPR[tier]]}
-      // No depth buffer: every material skips the depth test, so one would only take memory and a clear per frame.
+      // No depth buffer. Every material skips the depth test, so one would only take memory and a clear per frame.
       gl={{ antialias: false, depth: false, powerPreference: "high-performance" }}
       camera={{ fov: FOV, position: [0, 0, CAM_Z], near: 0.1, far: 100 }}
       frameloop={reduce ? "demand" : "always"}

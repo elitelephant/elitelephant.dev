@@ -15,7 +15,7 @@ const SPACING = `* { line-height: 1.5 !important; letter-spacing: .12em !importa
   p { margin-bottom: 2em !important; }`;
 
 async function frontInsideCard(page: Page) {
-  // Scrolled to its start, the stage shows the card's top: nothing sits above where scrolling can reach.
+  // Scrolled to its start, the stage shows the card's top, so nothing sits above where scrolling can reach.
   const top = await page.evaluate(() => {
     document.querySelector(".stage")!.scrollTo({ top: 0, behavior: "instant" });
     return document.getElementById("card")!.getBoundingClientRect().top;
@@ -59,8 +59,8 @@ async function everyPanelReads(page: Page) {
   // The back shows from its top, even when the stage had scrolled down to reach the button.
   await expect.poll(() => page.locator("#card").evaluate((el) => el.getBoundingClientRect().top), { message: "the back's top" })
     .toBeGreaterThanOrEqual(0);
-  // Scrolled into view, a panel's last element sits inside both the screen and the panels' box. Zoomed in, the
-  // page and the box scroll to fractions of a pixel, so the edge they stop at can be half a pixel off: 1 px of slack.
+  // Scrolled into view, a panel's last element sits inside both the screen and the panels' box. Zoomed in, the page
+  // and the box scroll to fractions of a pixel, so the edge they stop at can be half a pixel off, hence 1 px of slack.
   for (const id of [...site.back.panels.map((p) => p.id), "say-hi"]) {
     const last = page.locator(`#${id} > *`).last();
     await last.scrollIntoViewIfNeeded();
@@ -119,9 +119,9 @@ for (const [width, height, px] of [[390, 844, 21], [390, 844, 32], [1280, 800, 3
     const body = await page.locator("#back .panel:not(.story) p").first().evaluate((el) => getComputedStyle(el).fontSize);
     expect(body).toBe(`${px}px`);
 
-    // On a phone the card can't grow past the screen, so the panels don't fit, and say so: soft snapping, and a fading
-    // bottom edge while more is below. A desktop card grows with its front, and whether the back fits depends on the
-    // copy; either way every panel reads to its end (below).
+    // On a phone the card can't grow past the screen, so the panels don't fit, and say so with soft snapping and a
+    // fading bottom edge while more is below. A desktop card grows with its front, and whether the back fits depends
+    // on the copy; either way every panel reads to its end (below).
     const panels = page.locator("#panels");
     if (width < 760) {
       await expect(panels).toHaveAttribute("data-overflow");

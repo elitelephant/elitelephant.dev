@@ -54,8 +54,8 @@ export async function cardAngle(page: Page) {
   return (await cardTransform(page)).angle;
 }
 
-// Waits until the card has stopped at `angle`. The spring overshoots, so passing through it is not enough:
-// clicking a moving card can press on one element and release on another. At rest the spring snaps to the exact
+// Waits until the card has stopped at `angle`. The spring overshoots, so passing through it is not enough.
+// Clicking a moving card can press on one element and release on another. At rest the spring snaps to the exact
 // angle, which also tells "stopped" apart from two reads within one slow frame.
 export async function expectAngle(page: Page, angle: number, timeout = 5_000) {
   let last = NaN;

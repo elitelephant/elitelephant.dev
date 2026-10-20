@@ -36,7 +36,7 @@ export type Site = {
     flip: string;
     flipLabel: string;
     panels: readonly Panel[];
-    // The last panel: the call to write, with the contact links. The label names its dot.
+    // The last panel is the call to write, with the contact links. The label names its dot.
     sayHi: { label: string; text: string };
   };
   notFound: { code: string; text: string; link: string };

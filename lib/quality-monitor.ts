@@ -9,22 +9,23 @@ export const FPS_EVENT = "scene-fps";
 
 export const WARMUP_MS = 2000;
 export const WINDOW_MS = 2000;
-// high → medium under 45 fps; medium → static rings under 25, not 30: iPhones in Low Power Mode run at 30.
+// high → medium under 45 fps; medium → static rings under 25, not 30, because iPhones in Low Power Mode run at 30.
 const FLOOR: Record<LiveTier, number> = { high: 45, medium: 25 };
 const SLOW_WINDOWS = 2;
-// medium → high when it has room: three windows in a row (6 s) at 55 fps or more, close to a 60 Hz screen's full rate.
+// medium → high when it has room, meaning three windows in a row (6 s) at 55 fps or more, close to a 60 Hz screen's
+// full rate.
 const RISE_FPS = 55;
 const RISE_WINDOWS = 3;
 // Under 10 fps the browser may be holding frames back (a window in the background, an automated browser) rather than
-// failing to draw, so a few seconds of it are waited out. Four such windows in a row (8 s) and the scene goes
-// straight to the static rings: a device that slow could not hold even medium, and the card would turn in slow motion.
+// failing to draw, so a few seconds of it are waited out. Four such windows in a row (8 s) and the scene goes straight
+// to the static rings, since a device that slow could not hold even medium and the card would turn in slow motion.
 export const HELD_FPS = 10;
 const HELD_WINDOWS = 4;
-// Back to normal: two windows in a row at the medium floor or better, drawing nothing but the page.
+// Back to normal means two windows in a row at the medium floor or better, drawing nothing but the page.
 const RECOVERED_WINDOWS = 2;
 
 // Counts frames in 2 s windows and returns each finished window's rate. Time without focus is reported but not
-// judged (another app may be taking the GPU): it neither counts nor clears.
+// judged (another app may be taking the GPU), so it neither counts nor clears.
 function createWindows(warmup: number, onFps: (fps: number) => void) {
   let startedAt = -1;
   let windowStart = -1;

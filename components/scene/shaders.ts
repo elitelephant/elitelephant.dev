@@ -1,4 +1,4 @@
-// The scene's two shaders. scripts/rings-template.html runs the same two for the static fallback: change the two
+// The scene's two shaders. scripts/rings-template.html runs the same two for the static fallback, so change the two
 // together.
 
 // Each bubble's light, like a soap bubble: bright rim (fresnel), a highlight, a touch of diffuse, dimmer far away.
@@ -20,7 +20,7 @@ export const lightFrag = /* glsl */ `
     gl_FragColor = vec4(clamp(light, 0.0, 1.0), 0.0, 0.0, 1.0);
   }`;
 
-// One ring per cell: the brighter the light at the cell's center, the wider the ring; past 0.82 it fills in.
+// One ring per cell. The brighter the light at the cell's center, the wider the ring; past 0.82 it fills in.
 export const ringFrag = /* glsl */ `
   uniform sampler2D tLight;
   uniform vec2 uRes, uCell;

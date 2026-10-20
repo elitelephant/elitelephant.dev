@@ -1,6 +1,6 @@
 # elitelephant.dev
 
-Personal site: a dark card that turns over, on a mint page.
+A personal site with a dark card that turns over on a mint page.
 
 Next.js 16 (App Router), React 19, TypeScript. Every route is prerendered (`ensureStatic = "navigation"` in `app/layout.tsx`).
 
@@ -24,7 +24,7 @@ Runs lint, typecheck, unit tests (`node --test`), the production build and the P
 
 `npm ci` points git at `.githooks/`, so `git push` runs `verify` first. Pushes go straight to `main`, and every push to `main` deploys to production. Never push with `--no-verify`.
 
-Comments and commit messages make sense on their own: a unit test fails on decision IDs or on paths to files that are not in the repo, and the `commit-msg` hook turns away decision IDs and ticket numbers.
+Comments and commit messages make sense on their own. A unit test fails on decision IDs or on paths to files that are not in the repo, and the `commit-msg` hook turns away decision IDs and ticket numbers.
 
 ## Deploy
 

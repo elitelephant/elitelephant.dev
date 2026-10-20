@@ -27,12 +27,12 @@ class Boundary extends Component<{ children: ReactNode; onFail: () => void }, { 
   }
 }
 
-// For tests: the tier the page is at.
+// Tells tests the tier the page is at.
 const markTier = (tier: Quality) => {
   document.documentElement.dataset.tier = tier;
 };
 
-// The page stays without the scene for now: the static rings show (app/globals.css), until a scene comes back.
+// The page stays without the scene for now, so the static rings show (app/globals.css) until a scene comes back.
 const showRings = () => {
   document.documentElement.dataset.backdrop = "rings";
 };
@@ -42,7 +42,7 @@ const showRings = () => {
 export function SceneLoader() {
   const [live, setLive] = useState<LiveTier | null>(null);
   const [options, setOptions] = useState({ lock: false, debug: false, tier: "low" as Quality, ceiling: "low" as Quality });
-  // Whether the scene may still step up to high: closed once this device proved too slow for it.
+  // Whether the scene may still step up to high, closed once this device proved too slow for it.
   const [highOpen, setHighOpen] = useState(true);
   // The tier waiting to come back after a drop for held frames, and whether that one comeback was already given.
   const [comeback, setComeback] = useState<LiveTier | null>(null);
@@ -92,7 +92,7 @@ export function SceneLoader() {
     }
   }, []);
 
-  // A broken scene is gone for good: the page is at low, like a device with no scene at all.
+  // A broken scene is gone for good. The page is at low, like a device with no scene at all.
   const onFail = useCallback(() => {
     markTier("low");
     showRings();

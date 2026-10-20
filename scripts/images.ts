@@ -1,7 +1,7 @@
 // Renders the images that need a browser, with Playwright: the PNG icons from app/icon.svg (and favicon.ico, for the
 // clients that ask for /favicon.ico without reading the page), and the WebP rings of the static fallback from
 // scripts/rings-template.html (the scene's ring pass, drawn once). Run: node scripts/images.ts
-// The share image is not made here: next/og generates it at build time (app/opengraph-image.tsx).
+// The share image is not made here, since next/og generates it at build time (app/opengraph-image.tsx).
 import { chromium, type Browser } from "@playwright/test";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";

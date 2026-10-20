@@ -1,8 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { text } from "./helpers";
 
-// Colours, spacing and type, which no other test measures: the card and the button under it, front and back, against
-// stored screenshots.
+// Colours, spacing and type, which no other test measures, checked on the card and the button under it, front and
+// back, against stored screenshots.
 // Windows and Linux draw text slightly differently, so each keeps its own; the Linux ones come from Playwright's Ubuntu
 // image, which CI runs in (after a deliberate change: npx playwright test visual --update-snapshots, on both).
 test.use({ reducedMotion: "reduce" });

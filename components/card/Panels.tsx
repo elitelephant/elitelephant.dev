@@ -7,20 +7,20 @@ type Props = { label: string; dotsLabel: string; sections: readonly Section[]; c
 
 const smooth = (): ScrollBehavior => (matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth");
 const AIM_MS = 700; // while a smooth scroll runs, the next key counts from where it is heading
-const FIT_MIN = 0.78; // about 12.5 px for body text: below that, a panel scrolls rather than shrink further
+const FIT_MIN = 0.78; // about 12.5 px for body text; below that, a panel scrolls rather than shrink further
 // A phone turned sideways (or a laptop zoomed in) leaves a box under 336 px tall; there the text may go down to about
 // 10.3 px to fit.
 const SHORT_BOX = 336;
 const FIT_MIN_SHORT = 0.64;
 const DEFAULT_TEXT = 16; // px, the root size when the reader hasn't changed their text size
 
-// Makes every panel fit its box without scrolling: first the spacing tightens (data-tight), then the text shrinks
+// Makes every panel fit its box without scrolling. First the spacing tightens (data-tight), then the text shrinks
 // (--fit, the largest scale up to 1 that fits). Text the reader enlarged, in the browser or the system, keeps its size.
 // Whatever still doesn't fit is marked data-overflow, and reads by scrolling.
 function fitText(box: HTMLElement) {
   const panels = [...box.querySelectorAll<HTMLElement>(".panel")];
-  // Computed sizes: exact to a fraction of a pixel, where whole-pixel offsets could let a panel over by half a pixel
-  // pass for one that fits, and untouched by the card's turn. A panel stacks its children, margins included.
+  // Computed sizes are exact to a fraction of a pixel, where whole-pixel offsets could let a panel over by half a pixel
+  // pass for one that fits, and the card's turn leaves them alone. A panel stacks its children, margins included.
   const px = (el: Element, prop: "height" | "marginTop" | "marginBottom" | "paddingTop" | "paddingBottom") =>
     parseFloat(getComputedStyle(el)[prop]) || 0;
   const fits = (fit: number) => {
@@ -58,7 +58,7 @@ function markMore(box: HTMLElement) {
   box.toggleAttribute("data-more", more);
 }
 
-// The back's panels: one per section, snapping, with a dot per panel and keys that move one panel at a time.
+// The back's panels snap, one per section, with a dot per panel and keys that move one panel at a time.
 export function Panels({ label, dotsLabel, sections, children }: Props) {
   const boxRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);

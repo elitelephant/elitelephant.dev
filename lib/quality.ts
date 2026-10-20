@@ -1,5 +1,5 @@
-// Picks how much scene a device starts with, and the most it may get. low means no 3D at all: the static rings stay.
-// From there the frame rate decides (lib/quality-monitor.ts): the scene steps down when it can't keep up, and up to the
+// Picks how much scene a device starts with, and the most it may get. low means no 3D at all, so the static rings stay.
+// From there the frame rate decides (lib/quality-monitor.ts). The scene steps down when it can't keep up, and up to the
 // ceiling when it has room.
 import type { Quality } from "./params.ts";
 import type { LiveTier } from "./quality-monitor.ts";
@@ -23,7 +23,7 @@ export type Probe = {
 export type Plan = { start: Quality; ceiling: Quality };
 
 const SOFTWARE_GPU = /swiftshader|llvmpipe|softpipe|software|basic render/i;
-// No 3D at all: the static rings stay.
+// No 3D at all, so the static rings stay.
 export const NO_SCENE: Plan = { start: "low", ceiling: "low" };
 
 export function pickQuality(forced: Quality | null, probe: Probe): Plan {
@@ -33,7 +33,7 @@ export function pickQuality(forced: Quality | null, probe: Probe): Plan {
   if (!probe.webgl2 || !probe.capable) return NO_SCENE;
   // A GPU emulated on the CPU can't hold the scene; it would only slow the page down.
   if (probe.renderer && SOFTWARE_GPU.test(probe.renderer)) return NO_SCENE;
-  // Cores and memory only choose where to start: browsers report less than there is (Brave makes up new numbers for
+  // Cores and memory only choose where to start. Browsers report less than there is (Brave makes up new numbers for
   // each site and session), so a strong machine may start at medium and step up once it shows the frame rate.
   // Safari and Firefox don't report memory; unknown counts as enough.
   const small = (probe.cores ?? 4) <= 4 || (probe.memory ?? 8) <= 4;

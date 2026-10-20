@@ -13,7 +13,7 @@ const BREATH_LEAN = 0.08; // and leans out a little as it swells
 // front's drift and the frame's breathing keep going for SETTLE_HOLD seconds, then slow to a stop over SETTLE_EASE.
 export const SETTLE_HOLD = 3.5;
 export const SETTLE_EASE = 1.5;
-// How fast the drift and breathing run, `idle` seconds after the last interaction: full speed, then down to still.
+// How fast the drift and breathing run, `idle` seconds after the last interaction, from full speed down to still.
 export const pace = (idle: number) => Math.min(1, Math.max(0, 1 - (idle - SETTLE_HOLD) / SETTLE_EASE));
 
 export function frontTarget(b: Ball, t: number, out: Vector3) {
@@ -55,12 +55,12 @@ function aroundSeat(b: Ball, { box }: Layout, l: number, out: Vector3) {
 
 const SIDES: readonly Side[] = ["top", "right", "bottom", "left"];
 
-// A loose frame where the screen leaves room on one or two sides only. The seats go on all four sides: a side with
+// A loose frame where the screen leaves room on one or two sides only. The seats go on all four sides. A side with
 // room takes them by its length, a thin one (the sides of a phone upright, the top and bottom of one on its side) by
 // half of it, and a bubble there shows as a slice between the card's edge and the screen's. Each sits from a third
 // of the way behind the card's edge (from the edge itself on a thin side, so its slice is more than a sliver) out to
 // partly past the screen's, further out the deeper it sits, so the frame doesn't line up in rows. The flip button's
-// row counts as room: bubbles may pass behind it.
+// row counts as room, since bubbles may pass behind it.
 const THIN_SIDE = 0.5;
 function freeSeat(b: Ball, { box, room, free }: Layout, l: number, out: Vector3) {
   const across = box.right - box.left;

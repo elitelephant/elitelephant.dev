@@ -1,6 +1,6 @@
-// The share image: the page in small, a card of the site's laid paper on mint, with the headline broken by phrase in
-// its middle. The text sits inside the center square, which is all WhatsApp's compact preview shows.
-// Rendered by next/og (Satori): flexbox and inline styles only.
+// The share image is the page in small, a card of the site's laid paper on mint, with the headline broken by phrase
+// in its middle. The text sits inside the center square, which is all WhatsApp's compact preview shows.
+// Rendered by next/og (Satori), which takes flexbox and inline styles only.
 import { readFile } from "node:fs/promises";
 import type { CSSProperties } from "react";
 import { join } from "node:path";
@@ -23,8 +23,8 @@ async function geistSemiBold() {
   return file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength) as ArrayBuffer;
 }
 
-// The paper's laid lines, read from the stylesheet so the two never differ. Without the light specks: their noise
-// would take the PNG past the 300 KB that WhatsApp shows in a preview.
+// The paper's laid lines, read from the stylesheet so the two never differ. Without the light specks, since their
+// noise would take the PNG past the 300 KB that WhatsApp shows in a preview.
 export async function sharePaper() {
   "use cache";
   cacheLife("max");
@@ -48,7 +48,7 @@ export function ShareImage({ paper }: { paper: string }) {
   );
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", position: "relative", alignItems: "center", justifyContent: "center", background: MINT, fontFamily: "Geist" }}>
-      {/* The card, its lines at twice the page's scale: a preview shows the image at a third of its size or less. */}
+      {/* The card, its lines at twice the page's scale, as a preview shows the image at a third of its size or less. */}
       <div
         style={{
           position: "absolute", left: (SHARE_SIZE.width - CARD.width) / 2, top: (SHARE_SIZE.height - CARD.height) / 2, width: CARD.width,

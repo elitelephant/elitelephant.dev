@@ -56,7 +56,7 @@ export function createOwnEngine(bodies: readonly Body[], seed = 1): Engine {
           if (d2 >= min * min) continue;
           let dist = Math.sqrt(d2);
           if (dist < 1e-6) {
-            // Same spot: no direction to push along, so pick one.
+            // On the same spot there's no direction to push along, so pick one.
             d.set(part() - 0.5, part() - 0.5, (part() - 0.5) * 0.5).normalize();
             dist = 0;
           } else {

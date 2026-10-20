@@ -16,7 +16,7 @@ test("each screen gets the right frame shape and bubble size", () => {
     assert.equal(layout(k).shape, "strip", k);
     assert.equal(layout(k).scale, 0.8, k);
   }
-  // 36 px above the card and under the button: thinner than a bubble that still reads as one.
+  // 36 px above the card and under the button, thinner than a bubble that still reads as one.
   assert.equal(layout("smallPhone").shape, "strip");
   assert.equal(layout("smallPhone").scale, 0.7);
 });
@@ -48,7 +48,7 @@ for (const name of AROUND) {
   });
 
   // With reduced motion, and when the frame is rebuilt on the back, the spheres start in their seats and push
-  // each other apart before the first frame: what shows is where they end up, not the seats.
+  // each other apart before the first frame, so what shows is where they end up, not the seats.
   test(`${name}: once the spheres have pushed each other apart, none touches the card`, () => {
     const layout = computeLayout(c.view, c.card);
     for (const count of [44, 64]) {
@@ -72,7 +72,7 @@ for (const name of AROUND) {
   });
 }
 
-// How much of a bubble at `p` the screen shows: on screen and not behind the card. Sampled over its disc.
+// The share of a bubble at `p` that is on screen and not behind the card, sampled over its disc.
 function shown(layout: Layout, p: Vector3, r: number) {
   const s = onScreen(p);
   const R = seenRadius(r, p);
@@ -122,7 +122,7 @@ for (const name of STRIPS) {
   });
 }
 
-// The frame isn't two rows above and below the card: on a phone upright some seats are at the card's sides, where the
+// The frame isn't two rows above and below the card. On a phone upright some seats are at the card's sides, where the
 // bubble shows as a slice, and on one on its side, where the sides are the room, about half of them or more.
 test("the loose frame uses the card's sides too", () => {
   const atSide = (layout: Layout, p: Vector3) => {
