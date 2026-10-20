@@ -65,6 +65,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate, lo
   instances.frustumCulled = false;
   group.add(instances);
   let positions: THREE.Vector3[] = [];
+  let homes: THREE.Vector3[] = [];
   let sizes: number[] = [];
   let engine: Engine;
   let targets: THREE.Vector3[] = [];
@@ -160,6 +161,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate, lo
     targets = balls.map((b) => b.home.clone());
     instances.count = balls.length;
     positions = balls.map((b) => b.home.clone());
+    homes = balls.map((b) => b.home);
     sizes = balls.map((b) => b.r);
     place();
     engine = createOwnEngine(balls);
@@ -169,6 +171,7 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate, lo
     // Rebuilt while the back shows (a resize), so start in the seats, apart, instead of flying in from the front.
     if (mode === "gather") {
       updateTargets(motionTime);
+      engine.setTargets(targets);
       engine.teleport(targets);
       engine.settle();
     }
@@ -304,6 +307,8 @@ export function createBubbles({ gl, scene, camera, count, reduce, invalidate, lo
       if (!still) {
         updateTargets(0);
         engine.teleport(targets);
+        // With no drift, the front rests at the bubbles' homes, and the back on its seats.
+        engine.setTargets(mode === "gather" ? targets : homes);
         engine.settle();
         for (let i = 0; i < balls.length; i++) {
           engine.getPosition(i, positions[i]);

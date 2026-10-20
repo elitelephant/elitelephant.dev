@@ -420,8 +420,9 @@ test("with the back showing, a resize frames the new card", async ({ page }) => 
   await expect(html(page)).toHaveAttribute("data-scene-shape", "strip", { timeout: 10_000 });
   await expect(html(page)).toHaveAttribute("data-bubbles", "24");
   const top = await page.locator("#card").evaluate((el) => el.getBoundingClientRect().top);
+  // Seated, the bubbles above the card ink about 2 % of that strip.
   await expect.poll(async () => inkShare(page, await page.screenshot({ clip: { x: 0, y: 0, width: 390, height: top } })), { timeout: SLOW })
-    .toBeGreaterThan(0.03);
+    .toBeGreaterThan(0.01);
   expect(errors).toEqual([]);
 });
 
@@ -614,6 +615,24 @@ test.describe("with reduced motion", () => {
     await page.waitForTimeout(2_500);
     const later = await inkAboveCard(page);
     expect(first, `ink above the card: ${first} at first, ${later} later`).toBeGreaterThan(later * 0.9);
+  });
+
+  // The back's frame forms here too. On a wide screen every seat sits within about 300 px of the card's edges, so
+  // bubbles left where the front had them, all over the screen, would show as ink far from the card.
+  test("the frame forms around the card", async ({ page }) => {
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await sceneReady(page, "/?quality=medium&lock");
+    await turnOver(page);
+    await page.waitForTimeout(500);
+    const card = (await page.locator("#card").boundingBox())!;
+    const outside = (c: { x: number; y: number }) =>
+      Math.max(card.x - c.x, c.x - card.x - card.width, card.y - c.y, c.y - card.y - card.height);
+    const cells = await inkCells(page);
+    const near = cells.filter((c) => outside(c) <= 320);
+    const far = cells.filter((c) => outside(c) > 320);
+    const share = (list: typeof cells) => list.reduce((sum, c) => sum + c.ink, 0) / list.length;
+    expect(share(near), "ink close to the card").toBeGreaterThan(0.02);
+    expect(share(far), "ink far from the card").toBeLessThan(0.002);
   });
 
   test("the frame holds still, without breathing", async ({ page }) => {
