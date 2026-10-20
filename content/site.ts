@@ -90,7 +90,7 @@ export const site = {
           "Most people know me as Santiago.",
           "I bought my first crypto in January 2021. For four years that was most of it. I followed projects, read threads, speculated.",
           "In March 2025 I went to my first in-person blockchain talk and met the people behind the charts.",
-          "Since then I’ve joined several hackathons and won one. I’ve helped run community events in Santiago, built n8n flows that still run every day, and put my first site online.",
+          "Since then I’ve joined several hackathons and won one. I’ve helped run community events in Santiago de Chile. I’ve also built n8n flows that still run every day and put my first site online.",
         ],
       },
       {
