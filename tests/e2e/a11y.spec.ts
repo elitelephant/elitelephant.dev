@@ -26,7 +26,8 @@ test("a link in a panel's text opens in a new tab and says so", async ({ page })
   for (const a of await links.all()) {
     await expect(a).toHaveAttribute("target", "_blank");
     await expect(a).toHaveAttribute("rel", "noopener noreferrer");
-    expect(await a.evaluate((el) => el.textContent)).toMatch(new RegExp(`${site.contact.newTab}$`));
+    const words = await a.evaluate((el) => el.textContent ?? "");
+    expect(words.endsWith(site.contact.newTab), words).toBe(true);
     await expect(a).toHaveCSS("text-decoration-line", "underline");
   }
 });
