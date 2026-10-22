@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { site } from "../../content/site";
-import { dot, panelAtTop, setTextSize, text, turnOver } from "./helpers";
+import { contrast, dot, panelAtTop, setTextSize, text, turnOver } from "./helpers";
 
 test.use({ reducedMotion: "reduce" });
 
@@ -17,9 +17,9 @@ test("tab order, flip with Enter, keys move one panel, Escape returns", async ({
   await page.keyboard.press("Tab");
   const button = page.getByRole("button", { name: text.flip, exact: true });
   await expect(button).toBeFocused();
-  // The button sits on the mint page, so its focus ring can't be the page's own mint.
+  // The button sits on the mint page, so its focus ring needs 3:1 against the mint (WCAG 1.4.11).
   const [ring, pageColor] = await button.evaluate((el) => [getComputedStyle(el).outlineColor, getComputedStyle(document.body).backgroundColor]);
-  expect(ring).not.toBe(pageColor);
+  expect(contrast(ring, pageColor), `${ring} on ${pageColor}`).toBeGreaterThanOrEqual(3);
 
   await page.keyboard.press("Enter");
   const panels = page.locator("#panels");

@@ -107,5 +107,18 @@ export async function setTextSize(page: Page, px: number) {
   await cdp.send("Page.setFontSizes", { fontSizes: { standard: px, fixed: 13 } });
 }
 
+// WCAG's contrast ratio between two colours read from getComputedStyle, as rgb() or rgba() with the alpha left out.
+export function contrast(a: string, b: string) {
+  const luminance = (colour: string) => {
+    const [r, g, bl] = colour.match(/[\d.]+/g)!.slice(0, 3).map((v) => {
+      const c = Number(v) / 255;
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * bl;
+  };
+  const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (light + 0.05) / (dark + 0.05);
+}
+
 // three.js marks the window when it loads, so without the mark the 3D chunk was never downloaded.
 export const threeLoaded = (page: Page) => page.evaluate(() => "__THREE__" in window);
