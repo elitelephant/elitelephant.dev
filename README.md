@@ -45,3 +45,5 @@ This promotes the previous production deployment. Fix the problem on `main` afte
 ## URL flags
 
 `?quality=high|medium|low` sets the tier the scene starts at, `?lock` keeps it there (no stepping down or up), `?debug` shows the tier and frame rate, `?scene=0` leaves only the static rings (see `lib/params.ts`).
+
+They work locally, in CI and on preview deployments. The production deployment is built with them off (`VERCEL_ENV`, in `next.config.ts`), so `elitelephant.dev` ignores them and its bundle leaves out the debug panel. To measure with them, use a local production build or a preview.

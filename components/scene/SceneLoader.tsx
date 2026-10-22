@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { Component, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { readParams, type Quality } from "@/lib/params";
+import { readParams, urlFlags, type Quality } from "@/lib/params";
 import { NO_SCENE, pickQuality, probeDevice } from "@/lib/quality";
 import { createRecoveryWatch, type LiveTier, type Step } from "@/lib/quality-monitor";
 import { DebugPanel } from "./DebugPanel";
@@ -136,7 +136,8 @@ export function SceneLoader() {
           />
         </Boundary>
       )}
-      {options.debug && <DebugPanel tier={options.tier} />}
+      {/* urlFlags is a constant in the bundle, so the production build drops the panel. */}
+      {urlFlags && options.debug && <DebugPanel tier={options.tier} />}
     </>
   );
 }
