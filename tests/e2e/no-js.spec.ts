@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { llmsTxt, personJsonLd } from "../../content/agents";
 import { site } from "../../content/site";
 
 test.use({ javaScriptEnabled: false });
@@ -57,7 +58,10 @@ test("metadata is in the HTML", async ({ page }) => {
   await page.goto("/");
   const meta = (selector: string) => page.locator(selector).getAttribute("content");
 
-  expect(await meta('meta[name="description"]')).toBe(site.meta.description);
+  // No description, so link previews show only the title and the share image; the summary lives in the JSON-LD.
+  for (const selector of ['meta[name="description"]', 'meta[property="og:description"]', 'meta[name="twitter:description"]']) {
+    await expect(page.locator(selector), selector).toHaveCount(0);
+  }
   expect(await meta('meta[name="theme-color"]')).toBe(site.meta.themeColor);
   expect(await meta('meta[property="og:title"]')).toBe(site.meta.title);
   expect(await meta('meta[property="og:url"]')).toBe(site.url);
@@ -109,4 +113,33 @@ test("share images and icons have their real size, and the share images their we
     expect(pngSize(body), url).toEqual([width, height]);
     if (url.endsWith("-image")) expect(body.length, `${url} bytes`).toBeLessThanOrEqual(300_000);
   }
+});
+
+test("the JSON-LD in the HTML describes elitelephant", async ({ page }) => {
+  await page.goto("/");
+  const script = page.locator('script[type="application/ld+json"]');
+  await expect(script).toHaveCount(1);
+  expect(JSON.parse((await script.textContent()) ?? "")).toEqual(personJsonLd(site));
+});
+
+test("robots.txt, the sitemap and llms.txt are served", async ({ request, browserName }) => {
+  test.skip(browserName === "webkit", "Plain HTTP files, the same in every browser.");
+
+  const robots = await request.get("/robots.txt");
+  expect(robots.status()).toBe(200);
+  const rules = await robots.text();
+  expect(rules).toMatch(/^User-Agent: \*$/m);
+  expect(rules).toMatch(/^Allow: \/$/m);
+  expect(rules).not.toMatch(/^Disallow:/m);
+  expect(rules).toContain(`Sitemap: ${site.url}/sitemap.xml`);
+
+  const sitemap = await request.get("/sitemap.xml");
+  expect(sitemap.status()).toBe(200);
+  expect(sitemap.headers()["content-type"]).toContain("xml");
+  expect([...(await sitemap.text()).matchAll(/<loc>(.*?)<\/loc>/g)].map((m) => m[1])).toEqual([site.url]);
+
+  const llms = await request.get("/llms.txt");
+  expect(llms.status()).toBe(200);
+  expect(llms.headers()["content-type"]).toBe("text/plain; charset=utf-8");
+  expect(await llms.text()).toBe(llmsTxt(site));
 });

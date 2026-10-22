@@ -20,7 +20,11 @@ export type Site = {
   url: string;
   meta: {
     title: string;
-    description: string;
+    // Who's behind the site, in the third person, for search engines and AI agents (the JSON-LD and /llms.txt).
+    // There's no meta description, so link previews show only the title and the share image.
+    summary: string;
+    // The name Story opens with, for the JSON-LD.
+    alternateName: string;
     ogAlt: string;
     // The share image breaks the headline by phrase (Satori has no balanced wrapping). Same words as `front`.
     shareLines: { watching: readonly string[]; building: readonly string[] };
@@ -51,7 +55,9 @@ export const site = {
   url: "https://elitelephant.dev",
   meta: {
     title: "elitelephant",
-    description: "I spent years watching from the sidelines. Now I’m building things.",
+    summary:
+      "elitelephant is Santiago, from Chile. He watched crypto from the outside for four years while studying economics in France. Back in Chile he started computer science, joined several hackathons, won one, and began helping run community events in Santiago de Chile. At an internship he built n8n flows that still handle forms and reports every day. In August he paused his degree to explore, build and rest. Now he’s building Encendidos, a Stellar node for n8n where a person can approve each payment before it goes out.",
+    alternateName: "Santiago",
     ogAlt: "I spent years watching from the sidelines. Now I’m building things.",
     shareLines: {
       watching: ["I spent years", "watching from", "the sidelines."],

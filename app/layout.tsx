@@ -13,19 +13,17 @@ const measure = process.env.VERCEL_ENV === "production";
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
+  // No description anywhere, so link previews show only the title and the share image, which already says the line.
   title: site.meta.title,
-  description: site.meta.description,
   openGraph: {
     type: "website",
     url: "/",
     title: site.meta.title,
-    description: site.meta.description,
   },
   twitter: {
     card: "summary_large_image",
     creator: site.meta.twitterCreator,
     title: site.meta.title,
-    description: site.meta.description,
   },
   // Mobile Chrome applies the system text size to rem text only with this tag; the site sizes all its text in rem.
   other: { "text-scale": "scale" },
