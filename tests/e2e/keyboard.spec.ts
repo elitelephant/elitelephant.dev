@@ -7,15 +7,21 @@ test.use({ reducedMotion: "reduce" });
 test("tab order, flip with Enter, keys move one panel, Escape returns", async ({ page, browserName }) => {
   await page.goto("/?quality=low");
 
-  // Safari's Tab skips links unless the reader turns that on, so in WebKit it goes straight to the button.
-  if (browserName !== "webkit") {
+  const button = page.getByRole("button", { name: text.flip, exact: true });
+  if (browserName === "webkit") {
+    // Safari's Tab skips links unless the reader turns that on, as WebKit does on Windows, while on Linux it visits
+    // them. So in WebKit, Tab only has to reach the button, after the links or straight away.
+    for (let i = 0; i <= site.contact.links.length; i++) {
+      await page.keyboard.press("Tab");
+      if (await button.evaluate((el) => el === document.activeElement)) break;
+    }
+  } else {
     for (const link of site.contact.links) {
       await page.keyboard.press("Tab");
       await expect(page.getByRole("link", { name: link.label + site.contact.newTab, exact: true })).toBeFocused();
     }
+    await page.keyboard.press("Tab");
   }
-  await page.keyboard.press("Tab");
-  const button = page.getByRole("button", { name: text.flip, exact: true });
   await expect(button).toBeFocused();
   // The button sits on the mint page, so its focus ring needs 3:1 against the mint (WCAG 1.4.11).
   const [ring, pageColor] = await button.evaluate((el) => [getComputedStyle(el).outlineColor, getComputedStyle(document.body).backgroundColor]);
