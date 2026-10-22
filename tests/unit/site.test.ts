@@ -9,6 +9,13 @@ test("external links are https and the email link is mailto", () => {
   }
 });
 
+test("links inside the panels' text are https", () => {
+  const links = site.back.panels.flatMap((p) => p.paragraphs.flatMap((t) => (typeof t === "string" ? [] : t)))
+    .filter((part) => typeof part !== "string");
+  assert.ok(links.length > 0);
+  for (const link of links) assert.match(link.href, /^https:\/\//);
+});
+
 // Story first, since it answers the button that turns the card, "Who’s behind this?".
 test("panels are story, building and offline, in that order", () => {
   assert.deepEqual(site.back.panels.map((p) => p.id), ["story", "building", "offline"]);

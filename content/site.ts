@@ -5,10 +5,15 @@ export type ContactLink =
   | { kind: "external"; label: string; href: string }
   | { kind: "email"; label: string; href: string };
 
+// A link inside a paragraph, to another site, so it opens in a new tab like the contact links.
+export type InlineLink = { label: string; href: string };
+// Plain text, or text with links in it, in reading order.
+export type Paragraph = string | readonly (string | InlineLink)[];
+
 export type Panel = {
   id: "story" | "building" | "offline";
   label: string;
-  paragraphs: readonly string[];
+  paragraphs: readonly Paragraph[];
 };
 
 export type Site = {
@@ -88,31 +93,37 @@ export const site = {
         label: "Story",
         paragraphs: [
           "Most people know me as Santiago.",
-          "I bought my first crypto in January 2021. For four years that was most of it. I followed projects, read threads, speculated.",
-          "In March 2025 I went to my first in-person blockchain talk and met the people behind the charts.",
-          "Since then I’ve joined several hackathons and won one. I’ve helped run community events in Santiago de Chile. I’ve also built n8n flows that still run every day and put my first site online.",
+          "I bought my first crypto a few years ago. For the next four years I only watched from the outside, while I was studying economics in France.",
+          "Last year I started studying computer science back in Chile and went to my first in-person blockchain talk. I met the people building what I’d been watching.",
+          "Since then I’ve joined several hackathons and ended up winning one. I went from attending community events in Santiago de Chile to helping run them.",
+          "At an internship I built n8n flows that still handle forms and reports every day. And after years of wanting one, I put my first site online in three days.",
+          "In August I paused my degree to explore, build and rest.",
         ],
       },
       {
         id: "building",
         label: "Building",
         paragraphs: [
-          "“Bring the rails to the users,” wrote Stellar’s Denelle Dixon. Lots of people already automate their work in n8n. So I’m bringing Stellar there, as one more node next to Gmail, Sheets or a webhook.",
-          "Any trigger can start a payment. A merged PR, a delivered package, an AI agent’s decision.",
-          "Moving money is the easy part. Trust is harder, so that’s what I’m working on: checking before paying, and not paying twice when a workflow retries.",
+          [
+            "I’m bringing Stellar to n8n, as one more node next to many others. A person can approve each payment before it goes out. I call the project Encendidos. The first step was updating ",
+            { label: "the community node that signs Stellar transactions", href: "https://github.com/yripper/n8n-nodes-stellar" },
+            ".",
+          ],
+          "n8n’s community has published over 13,000 workflow templates. Any of them could end in a payment.",
+          "Yet out of more than 2,000 integrations, only a handful can send money. Encendidos is for that.",
         ],
       },
       {
         id: "offline",
         label: "Offline",
         paragraphs: [
-          "I enjoy riding bikes. Tuesday mornings are for an early social ride that ends with coffee. I’m also getting into running.",
-          "In a new city I like to get lost and walk for hours.",
-          "I speak Spanish, French and English.",
+          "I’ve been cycling for two years. Running is harder, and I’m still working on it.",
+          "Walking I can do for hours, especially when I’m lost in a new city.",
+          "I went to a French school in Chile, so I grew up with Spanish and French. I speak English too.",
         ],
       },
     ],
-    sayHi: { label: "Say hi", text: "Say hi." },
+    sayHi: { label: "Say hi", text: "Met in Lisbon? Say hi." },
   },
   notFound: {
     code: "404",

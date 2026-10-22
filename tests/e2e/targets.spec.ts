@@ -4,6 +4,7 @@ import { dot, panelAtTop, text } from "./helpers";
 
 // A finger needs about 44×44 px to hit what it aims at (Apple, WCAG 2.5.5); a mouse 24×24 (WCAG 2.5.8). Links and dots
 // get that area around them without changing how they look, and never from the text size; buttons are drawn 44 tall.
+// A link inside a sentence keeps the line's height, which WCAG 2.5.8 allows, so these checks leave it out.
 test.use({ reducedMotion: "reduce" });
 
 // The targets matching `selector` whose area is smaller than size×size, meaning some point within size/2 of the

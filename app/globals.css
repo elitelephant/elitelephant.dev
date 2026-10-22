@@ -153,6 +153,9 @@ h1 .now { display: block; color: var(--mint); margin-top: .12em; }
 /* pretty keeps a word from sitting alone on a paragraph's last line. */
 p { color: var(--muted); line-height: 1.62; font-size: 1rem; margin-bottom: 12px; max-width: 60ch; text-wrap: pretty; }
 .panel p { font-size: calc(1rem * var(--fit, 1)); margin-bottom: calc(12px * var(--fit, 1)); }
+/* A link inside a sentence is underlined, since colour alone wouldn't tell it apart from the text around it. It keeps
+   the line's height, as a target inside a sentence may (WCAG 2.5.8). */
+.panel p a { text-decoration: underline; text-decoration-color: rgba(140,254,184,.45); }
 /* The last panel shows "Say hi." large over the links, in the middle of the card on every screen. The two classes
    outrank the phone and landscape rules that start the other panels at the top. */
 .panel.say-hi { justify-content: safe center; }

@@ -17,6 +17,20 @@ for (const [width, height] of [[1280, 800], [390, 844]] as const) {
   });
 }
 
+// A link in a panel's text goes to another site, so like the contact links it opens in a new tab and says so.
+test("a link in a panel's text opens in a new tab and says so", async ({ page }) => {
+  await page.goto("/?quality=low");
+  await turnOver(page);
+  const links = page.locator(".panel p a");
+  await expect(links).not.toHaveCount(0);
+  for (const a of await links.all()) {
+    await expect(a).toHaveAttribute("target", "_blank");
+    await expect(a).toHaveAttribute("rel", "noopener noreferrer");
+    expect(await a.evaluate((el) => el.textContent)).toMatch(new RegExp(`${site.contact.newTab}$`));
+    await expect(a).toHaveCSS("text-decoration-line", "underline");
+  }
+});
+
 // High contrast (Windows) swaps every colour for the system's. The dots are only a background, so without colours of
 // their own they'd turn into the system's background and vanish, and the back would no longer say it has more panels.
 test.describe("in high contrast", () => {
