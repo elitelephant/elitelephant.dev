@@ -116,8 +116,9 @@ for (const [width, height] of SIZES) {
 }
 
 // An iPhone with no home button keeps its home indicator clear under the stage. On its side that inset is 21 px, more
-// than the stage's usual 16, and the card gives up the difference. Chromium only, as it can set the safe-area insets.
-test("on an iPhone on its side, the card and the button fit above the home indicator", async ({ page }) => {
+// than the stage's usual 16, and the card gives up the difference.
+test("on an iPhone on its side, the card and the button fit above the home indicator", async ({ page, browserName }) => {
+  test.skip(browserName !== "chromium", "Only Chromium lets a test set the safe-area insets.");
   await page.setViewportSize({ width: 844, height: 390 });
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, left: 47, right: 47, bottom: 21 } });

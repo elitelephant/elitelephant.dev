@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { site } from "../../content/site";
 
@@ -56,8 +56,9 @@ export async function cardAngle(page: Page) {
 
 // Waits until the card has stopped at `angle`. The spring overshoots, so passing through it is not enough.
 // Clicking a moving card can press on one element and release on another. At rest the spring snaps to the exact
-// angle, which also tells "stopped" apart from two reads within one slow frame.
-export async function expectAngle(page: Page, angle: number, timeout = 5_000) {
+// angle, which also tells "stopped" apart from two reads within one slow frame. Without a timeout it waits as long as
+// the project's expect timeout, which is longer for WebKit, since it draws in software.
+export async function expectAngle(page: Page, angle: number, timeout?: number) {
   let last = NaN;
   await expect
     .poll(async () => {
@@ -97,8 +98,10 @@ export async function loadWithTier(page: Page, url: string, tier: "high" | "medi
 export const ringsShown = (page: Page) => page.evaluate(() => Number(getComputedStyle(document.body, "::before").opacity));
 
 // Sets the browser's default text size, as a reader does in the settings (and Chrome on Android does from the
-// system's, given the text-scale meta tag). Chromium only; call it before loading the page.
+// system's, given the text-scale meta tag). Call it before loading the page. It goes through Chromium's DevTools
+// protocol, so in other browsers the test is skipped.
 export async function setTextSize(page: Page, px: number) {
+  test.skip(page.context().browser()?.browserType().name() !== "chromium", "Only Chromium lets a test set the browser's text size.");
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("Page.enable");
   await cdp.send("Page.setFontSizes", { fontSizes: { standard: px, fixed: 13 } });

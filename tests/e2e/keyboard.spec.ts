@@ -4,12 +4,15 @@ import { dot, panelAtTop, setTextSize, text, turnOver } from "./helpers";
 
 test.use({ reducedMotion: "reduce" });
 
-test("tab order, flip with Enter, keys move one panel, Escape returns", async ({ page }) => {
+test("tab order, flip with Enter, keys move one panel, Escape returns", async ({ page, browserName }) => {
   await page.goto("/?quality=low");
 
-  for (const link of site.contact.links) {
-    await page.keyboard.press("Tab");
-    await expect(page.getByRole("link", { name: link.label + site.contact.newTab, exact: true })).toBeFocused();
+  // Safari's Tab skips links unless the reader turns that on, so in WebKit it goes straight to the button.
+  if (browserName !== "webkit") {
+    for (const link of site.contact.links) {
+      await page.keyboard.press("Tab");
+      await expect(page.getByRole("link", { name: link.label + site.contact.newTab, exact: true })).toBeFocused();
+    }
   }
   await page.keyboard.press("Tab");
   const button = page.getByRole("button", { name: text.flip, exact: true });

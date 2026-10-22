@@ -5,7 +5,8 @@ import { loadWithTier, ringsShown, threeLoaded, turnOver } from "./helpers";
 // Without WebGL the page keeps the static rings and the card works the same.
 test.use({ launchOptions: { args: ["--disable-webgl", "--disable-webgl2", "--disable-3d-apis"] } });
 
-test("without WebGL the scene never loads, the rings stay and the card still turns", async ({ page }) => {
+test("without WebGL the scene never loads, the rings stay and the card still turns", async ({ page, browserName }) => {
+  test.skip(browserName !== "chromium", "Only Chromium can switch WebGL off, with the flags above.");
   await loadWithTier(page, "/", "low");
   expect(await page.evaluate(() => !!document.createElement("canvas").getContext("webgl2"))).toBe(false);
   await expect(page.locator(".scene")).toHaveCount(0);

@@ -52,7 +52,8 @@ test.describe("with motion", () => {
     await expectAngle(page, 0);
   });
 
-  test("the card tilts toward the mouse and lies flat again once it leaves", async ({ page }) => {
+  test("the card tilts toward the mouse and lies flat again once it leaves", async ({ page, browserName }) => {
+    test.skip(browserName === "webkit", "The WebKit run is an iPhone, with no mouse to hover with.");
     await page.goto("/?quality=low");
     // Near the top-left corner the top leans back (rotateX up) and the left side away (rotateY down).
     await hover(page, 0.1, 0.1);
@@ -70,7 +71,8 @@ test.describe("with motion", () => {
 
   // Under the mouse the flip button's tint fades in along with its border, instead of switching on at once. The
   // transitions are caught as they start, so a slow machine can't miss them.
-  test("the flip button's fill fades in under the mouse", async ({ page }) => {
+  test("the flip button's fill fades in under the mouse", async ({ page, browserName }) => {
+    test.skip(browserName === "webkit", "The WebKit run is an iPhone, with no mouse to hover with.");
     await page.goto("/?quality=low");
     const button = page.locator("[data-flip]");
     const rest = await button.evaluate((el) => {
@@ -83,7 +85,8 @@ test.describe("with motion", () => {
   });
 
   // A dot under the mouse lights up, so it reads as something to click; the current one keeps its mint.
-  test("a dot lights up under the mouse", async ({ page }) => {
+  test("a dot lights up under the mouse", async ({ page, browserName }) => {
+    test.skip(browserName === "webkit", "The WebKit run is an iPhone, with no mouse to hover with.");
     await page.goto("/?quality=low");
     await turnOver(page);
     const dot = (i: number) => page.locator(".dots button").nth(i);
@@ -109,18 +112,32 @@ test.describe("with motion", () => {
 test.describe("on a touch screen", () => {
   test.use({ reducedMotion: "no-preference", hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
 
-  test("a touch doesn't tilt the card, and a tap on the button turns it", async ({ page }) => {
+  test("a touch doesn't tilt the card, and a tap on the button turns it", async ({ page, browserName }) => {
     await page.goto("/?quality=low");
     const unlit = await page.locator("[data-flip]").evaluate((el) => getComputedStyle(el).boxShadow);
     const card = (await page.locator("#card").boundingBox())!;
     const at = (fx: number, fy: number) => ({ x: card.x + card.width * fx, y: card.y + card.height * fy });
-    // A finger dragged across the card, as touch events (Playwright's tap alone moves no pointer).
-    const cdp = await page.context().newCDPSession(page);
-    await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [at(0.1, 0.1)] });
-    for (let i = 1; i <= 8; i++) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [at(0.1 + i * 0.1, 0.1 + i * 0.05)] });
-    await nextFrames(page);
-    expect(await cardTransform(page)).toEqual({ angle: 0, tilt: 0 });
-    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    const drag = Array.from({ length: 9 }, (_, i) => at(0.1 + i * 0.1, 0.1 + i * 0.05));
+    // A finger dragged across the card (Playwright's tap alone moves no pointer). Chromium takes real touch events
+    // through its DevTools protocol. WebKit has no such protocol, so the card gets the pointer events a finger fires,
+    // which are what the tilt would listen to.
+    if (browserName === "chromium") {
+      const cdp = await page.context().newCDPSession(page);
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [drag[0]] });
+      for (const point of drag.slice(1)) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [point] });
+      await nextFrames(page);
+      expect(await cardTransform(page)).toEqual({ angle: 0, tilt: 0 });
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    } else {
+      await page.locator("#card").evaluate((el, drag) => {
+        for (const [i, { x, y }] of drag.entries()) {
+          el.dispatchEvent(new PointerEvent(i ? "pointermove" : "pointerdown", { pointerType: "touch", clientX: x, clientY: y, bubbles: true }));
+        }
+      }, drag);
+      await nextFrames(page);
+      expect(await cardTransform(page)).toEqual({ angle: 0, tilt: 0 });
+      await page.locator("#card").evaluate((el) => el.dispatchEvent(new PointerEvent("pointerup", { pointerType: "touch", bubbles: true })));
+    }
     await page.touchscreen.tap(at(0.9, 0.3).x, at(0.9, 0.3).y);
     await nextFrames(page);
     expect(await cardTransform(page)).toEqual({ angle: 0, tilt: 0 });
