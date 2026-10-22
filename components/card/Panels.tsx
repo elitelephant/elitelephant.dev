@@ -79,19 +79,32 @@ export function Panels({ label, dotsLabel, sections, children }: Props) {
   useLayoutEffect(() => {
     const box = boxRef.current;
     if (!box) return;
+    // A resize can leave the box on another panel, since WebKit snaps to the nearest one rather than the one it was on
+    // (a phone turned while reading Offline would land on Say hi). So the box keeps the panel at its top, as of the last
+    // scroll at the size it had then, and goes back to it once it has a new size.
+    let size = [box.clientWidth, box.clientHeight];
+    let top = 0;
+    const sameSize = () => box.clientWidth === size[0] && box.clientHeight === size[1];
     const fit = () => {
+      const resized = !sameSize();
+      size = [box.clientWidth, box.clientHeight];
       fitText(box);
+      const panel = panels()[top];
+      if (resized && panel) box.scrollTo({ top: panel.offsetTop, behavior: "instant" });
       markMore(box);
     };
-    const more = () => markMore(box);
+    const scrolled = () => {
+      if (sameSize()) top = Math.max(0, panels().findLastIndex((p) => p.offsetTop <= box.scrollTop + 2));
+      markMore(box);
+    };
     fit();
     const observer = new ResizeObserver(fit);
     observer.observe(box);
     document.fonts.ready.then(fit);
-    box.addEventListener("scroll", more, { passive: true });
+    box.addEventListener("scroll", scrolled, { passive: true });
     return () => {
       observer.disconnect();
-      box.removeEventListener("scroll", more);
+      box.removeEventListener("scroll", scrolled);
     };
   }, []);
 
