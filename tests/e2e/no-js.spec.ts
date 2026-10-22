@@ -4,8 +4,10 @@ import { site } from "../../content/site";
 
 test.use({ javaScriptEnabled: false });
 
-// With no scene to grow in, the static rings show from the start.
+// With no scene to grow in, the static rings show from the start. A wide window, since a phone held upright gets the
+// tall picture.
 test("without JavaScript the static rings show", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/");
   const rings = await page.evaluate(() => {
     const style = getComputedStyle(document.body, "::before");
