@@ -32,6 +32,10 @@ async function checkTargets(page: Page, size: number) {
 
   await page.getByRole("button", { name: text.flip }).click();
   await expect(page.locator("#back")).not.toHaveAttribute("inert");
+  // The back is probed with the card flat, where its turned faces lay out the same. WebKit on Linux hit-tests a card
+  // turned in 3D at a fractional position up to a pixel off its layout, enough to land on the next dot where two touch,
+  // while how big each area is doesn't depend on the turn.
+  await page.addStyleTag({ content: "#card, #back { transform: none !important; } #front { pointer-events: none; }" });
   expect(await tooSmall(page, ".dots button", size), "dots").toEqual([]);
   expect(await tooSmall(page, "[data-flip]", 44), "flip button on the back").toEqual([]);
 
