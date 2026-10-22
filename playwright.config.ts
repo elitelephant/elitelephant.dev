@@ -3,6 +3,8 @@ import { defineConfig, devices } from "@playwright/test";
 // The e2e suite runs against the production build (`next start`), never the dev server.
 const PORT = 3100;
 const SCENE = /scene\.spec\.ts/;
+// Switches WebGL off with Chromium's flags, which WebKit refuses to launch with.
+const NO_WEBGL = /no-webgl\.spec\.ts/;
 
 export default defineConfig({
   testDir: "tests/e2e",
@@ -37,7 +39,7 @@ export default defineConfig({
     // 0.7 GB of memory.
     {
       name: "webkit",
-      testIgnore: SCENE,
+      testIgnore: [SCENE, NO_WEBGL],
       use: { ...devices["iPhone 13"], deviceScaleFactor: 1 },
       ignoreSnapshots: true,
       timeout: 60_000,
