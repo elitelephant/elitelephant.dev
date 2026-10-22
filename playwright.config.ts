@@ -26,8 +26,20 @@ export default defineConfig({
         launchOptions: { args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] },
       },
     },
-    // Safari's engine on an iPhone, for the card's faces, which WebKit renders its own way.
-    { name: "webkit", testMatch: /faces\.spec\.ts/, use: { ...devices["iPhone 13"] } },
+    // Safari's engine on an iPhone, for everything but the scene. Headless WebKit draws in software, so it renders at
+    // 1x (a turn at 3x takes about 5 s) and gets longer waits, and what these tests check doesn't depend on the pixel
+    // ratio. Its screenshots aren't compared, since the pixels WebKit draws its own way (the faces, the headline's cut,
+    // the paper's contrast) are checked in faces.spec.ts and a11y.spec.ts. Two at a time, as a WebKit page takes about
+    // 0.7 GB of memory.
+    {
+      name: "webkit",
+      testIgnore: SCENE,
+      use: { ...devices["iPhone 13"], deviceScaleFactor: 1 },
+      ignoreSnapshots: true,
+      timeout: 60_000,
+      expect: { timeout: 15_000 },
+      workers: 2,
+    },
   ],
   webServer: {
     command: `npm run start -- -p ${PORT}`,

@@ -2,18 +2,13 @@ import { test, expect, type Page } from "@playwright/test";
 import { site } from "../../content/site";
 import { expectAngle, moveAway, text } from "./helpers";
 
-// Headless WebKit draws in software, slowly at the iPhone's 3x, so its waits get plenty of time.
+// Headless WebKit draws in software, so its waits get plenty of time.
 const SLOW = 30_000;
 
 const style = (page: Page, selector: string, prop: "opacity" | "backgroundColor" | "backgroundImage") =>
   page.locator(selector).evaluate((el, p) => getComputedStyle(el)[p], prop);
 
-// The turns run at 1x. At the iPhone's 3x, headless WebKit draws the turning card in software at about 6 fps, a turn
-// takes 5 s, and two of them could outlast the test on a busy machine. What these tests check doesn't depend on the
-// pixel ratio.
 test.describe("turning the card", () => {
-  test.use({ deviceScaleFactor: 1 });
-
   // WebKit ignores backface-visibility, even on a bare two-face card, and shows the other face mirrored through.
   test("only the face looking at you can be seen", async ({ page }, testInfo) => {
     await page.goto("/?quality=low");
@@ -115,29 +110,34 @@ const letterAt = (page: Page, selector: string, letter: string) => page.locator(
 const red = (c: { r: number; g: number; b: number }) => c.r > 200 && c.g < 70 && c.b < 70;
 const white = (c: { r: number; g: number; b: number }) => c.r > 200 && c.g > 200 && c.b > 200;
 
-// The headline's second line is cut out of the card's paper, so the page and its bubbles show through its letters;
-// the first line stays white on the card. The page is painted red here, so what shows through can't be mistaken for
-// the line's own mint.
-test("the headline's second line is cut out of the card, and the first stays on it", async ({ page }) => {
-  await page.goto("/?quality=low");
-  await expect(page.locator("#front")).toHaveAttribute("data-cut", "", { timeout: SLOW });
-  await page.addStyleTag({ content: "body { background: #f00 !important } body::before { display: none !important }" });
-  const stem = await letterAt(page, "#front h1 .now", "l");
-  expect(red(await colorAt(page, stem.x, stem.y)), "the page through the l of building").toBe(true);
-  const first = await letterAt(page, "#front h1", "I");
-  expect(white(await colorAt(page, first.x, first.y)), "the I of the first line").toBe(true);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(`${site.front.watching} ${site.front.building}`);
-});
+// The mask is drawn at the screen's pixel ratio, up to 2x, so the cut is checked at an iPhone's 3x.
+test.describe("the headline's cut", () => {
+  test.use({ deviceScaleFactor: 3 });
 
-// The letters are cut where the browser lays them out, so a change of size (the window, the text) cuts them again.
-test("the cut follows the headline when the window changes size", async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto("/?quality=low");
-  await expect(page.locator("#front")).toHaveAttribute("data-cut", "", { timeout: SLOW });
-  await page.addStyleTag({ content: "body { background: #f00 !important } body::before { display: none !important }" });
-  await page.setViewportSize({ width: 390, height: 844 });
-  await expect.poll(async () => {
+  // The headline's second line is cut out of the card's paper, so the page and its bubbles show through its letters;
+  // the first line stays white on the card. The page is painted red here, so what shows through can't be mistaken for
+  // the line's own mint.
+  test("the headline's second line is cut out of the card, and the first stays on it", async ({ page }) => {
+    await page.goto("/?quality=low");
+    await expect(page.locator("#front")).toHaveAttribute("data-cut", "", { timeout: SLOW });
+    await page.addStyleTag({ content: "body { background: #f00 !important } body::before { display: none !important }" });
     const stem = await letterAt(page, "#front h1 .now", "l");
-    return red(await colorAt(page, stem.x, stem.y));
-  }, { message: "the page through the l of building, at the new size", timeout: SLOW }).toBe(true);
+    expect(red(await colorAt(page, stem.x, stem.y)), "the page through the l of building").toBe(true);
+    const first = await letterAt(page, "#front h1", "I");
+    expect(white(await colorAt(page, first.x, first.y)), "the I of the first line").toBe(true);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(`${site.front.watching} ${site.front.building}`);
+  });
+
+  // The letters are cut where the browser lays them out, so a change of size (the window, the text) cuts them again.
+  test("the cut follows the headline when the window changes size", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/?quality=low");
+    await expect(page.locator("#front")).toHaveAttribute("data-cut", "", { timeout: SLOW });
+    await page.addStyleTag({ content: "body { background: #f00 !important } body::before { display: none !important }" });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect.poll(async () => {
+      const stem = await letterAt(page, "#front h1 .now", "l");
+      return red(await colorAt(page, stem.x, stem.y));
+    }, { message: "the page through the l of building, at the new size", timeout: SLOW }).toBe(true);
+  });
 });
