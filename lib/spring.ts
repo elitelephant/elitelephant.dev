@@ -7,7 +7,8 @@ const MAX_DT = 1 / 30; // a long frame never takes a bigger step than this
 export type Spring = { angle: number; vel: number };
 
 export function step(s: Spring, target: number, dt: number): Spring {
-  const h = Math.min(dt, MAX_DT);
+  // A frame can be stamped before the turn was asked for, so a negative dt is no step at all.
+  const h = Math.min(Math.max(dt, 0), MAX_DT);
   const vel = s.vel + (K * (target - s.angle) - C * s.vel) * h;
   return { angle: s.angle + vel * h, vel };
 }

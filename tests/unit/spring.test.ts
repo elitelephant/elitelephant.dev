@@ -54,3 +54,9 @@ test("a very long frame takes no bigger step than 1/30 s", () => {
   const b = step({ angle: 0, vel: 0 }, 180, 1 / 30);
   assert.deepEqual(a, b);
 });
+
+// A frame can be stamped before the click that started the turn, so its dt comes out negative. Taken as a step, it
+// threw the card past the edge in one frame and then pulled it back.
+test("a frame stamped before the turn began doesn't move the card", () => {
+  assert.deepEqual(step({ angle: 0, vel: 0 }, 180, -0.07), { angle: 0, vel: 0 });
+});
