@@ -7,6 +7,10 @@ const SCENE = /scene\.spec\.ts/;
 export default defineConfig({
   testDir: "tests/e2e",
   fullyParallel: true,
+  // Four at a time on a developer's machine. With six, the browsers starting together (WebKit's among them) can leave
+  // Chromium unable to take a screenshot, and the scene, which runs in series, takes as long either way. CI keeps
+  // Playwright's default, half the cores.
+  workers: process.env.CI ? undefined : 4,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   // A test that passes only on its retry is unreliable, and fails the run.
