@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { site } from "../../content/site.ts";
+import { site, type Panel } from "../../content/site.ts";
 
 test("external links are https and the email link is mailto", () => {
   for (const link of site.contact.links) {
@@ -10,7 +10,9 @@ test("external links are https and the email link is mailto", () => {
 });
 
 test("links inside the panels' text are https", () => {
-  const links = site.back.panels.flatMap((p) => p.paragraphs.flatMap((t) => (typeof t === "string" ? [] : t)))
+  // Read through the Panel type, since the literal types of two panels with links don't merge into one array.
+  const panels: readonly Panel[] = site.back.panels;
+  const links = panels.flatMap((p) => p.paragraphs.flatMap((t) => (typeof t === "string" ? [] : t)))
     .filter((part) => typeof part !== "string");
   assert.ok(links.length > 0);
   for (const link of links) assert.match(link.href, /^https:\/\//);

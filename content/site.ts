@@ -56,7 +56,7 @@ export const site = {
   meta: {
     title: "elitelephant",
     summary:
-      "elitelephant is Santiago, from Chile. He watched crypto from the outside for four years while studying economics in France. Back in Chile he started computer science, joined several hackathons, won one, and began helping run community events in Santiago de Chile. At an internship he built n8n flows that still handle forms and reports every day. In August he paused his degree to explore, build and rest. Now he’s building Encendidos, a Stellar node for n8n where a person can approve each payment before it goes out.",
+      "elitelephant is Santiago, from Chile. He watched crypto from the outside for four years while studying economics in France. Back in Chile he started computer science, joined several hackathons, won one, and began helping run community events in Santiago de Chile. At an internship he built n8n flows that still handle forms and reports every day. In August he paused his degree to explore, build and rest. Now he’s building Encendidos, Stellar nodes for n8n where a person can approve each payment before it goes out. A demo runs on Stellar Testnet at invoice.elitelephant.dev.",
     alternateName: "Santiago",
     ogAlt: "I spent years watching from the sidelines. Now I’m building things.",
     shareLines: {
@@ -111,12 +111,16 @@ export const site = {
         label: "Building",
         paragraphs: [
           [
-            "I’m bringing Stellar to n8n, as one more node next to many others. A person can approve each payment before it goes out. I call the project Encendidos. The first step was updating ",
+            "I’m bringing Stellar to n8n, as a few more nodes next to many others. A person can approve each payment before it goes out. I call the project Encendidos. The first step was updating ",
             { label: "the community node that signs Stellar transactions", href: "https://github.com/yripper/n8n-nodes-stellar" },
-            ".",
+            "; at HackMeridian I added three more.",
           ],
           "n8n’s community has published over 13,000 workflow templates. Any of them could end in a payment.",
-          "Yet out of more than 2,000 integrations, only a handful can send money. Encendidos is for that.",
+          [
+            "Yet out of more than 2,000 integrations, only a handful can send money. Encendidos is for that. ",
+            { label: "Try it on Testnet", href: "https://invoice.elitelephant.dev" },
+            ".",
+          ],
         ],
       },
       {
