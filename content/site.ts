@@ -56,7 +56,7 @@ export const site = {
   meta: {
     title: "elitelephant",
     summary:
-      "elitelephant is Santiago, from Chile. He watched crypto from the outside for four years while studying economics in France. Back in Chile he started computer science, joined several hackathons, won one, and began helping run community events in Santiago de Chile. At an internship he built n8n flows that still handle forms and reports every day. In August he paused his degree to explore, build and rest. Now he’s building Encendidos, Stellar nodes for n8n where a person can approve each payment before it goes out. A demo runs on Stellar Testnet at invoice.elitelephant.dev.",
+      "elitelephant is Santiago, from Chile. He spent years watching blockchain from the sidelines while studying economics in France. Back in Chile he started computer science, joined hackathons, won one, and began helping run community events in Santiago de Chile. At an internship he built n8n workflows that still handle forms and reports every day. In August 2026 he paused his degree to explore, build and rest. Now he’s building Encendidos, Stellar nodes for n8n that can hold each payment until a person approves it.",
     alternateName: "Santiago",
     ogAlt: "I spent years watching from the sidelines. Now I’m building things.",
     shareLines: {
@@ -99,10 +99,10 @@ export const site = {
         label: "Story",
         paragraphs: [
           "Most people know me as Santiago.",
-          "I bought my first crypto a few years ago. For the next four years I watched from the outside while studying economics in France.",
-          "Last year I started computer science back in Chile. At my first blockchain talk I met the people building what I’d been watching.",
+          "I got into blockchain a while ago. For the next few years I watched from the sidelines while studying economics in France.",
+          "After that I started computer science back in Chile. At my first blockchain talk I met the people building what I’d been watching.",
           "Since then I’ve joined hackathons and ended up winning one. I went from attending events in Santiago de Chile to helping run them.",
-          "At an internship I built n8n flows that still handle forms and reports every day. I also put my first site online, in three days.",
+          "At an internship I built n8n workflows that still handle forms and reports every day. Before this site, I put my first one online in three days.",
           "In August I paused my degree to explore, build and rest.",
         ],
       },
@@ -111,14 +111,14 @@ export const site = {
         label: "Building",
         paragraphs: [
           [
-            "I’m bringing Stellar to n8n, as a few more nodes next to many others. A person can approve each payment before it goes out. I call the project Encendidos. The first step was updating ",
+            "I’m bringing Stellar to n8n, as nodes next to the ones people already use. With them, a workflow can hold each payment until a person approves it. I call the project Encendidos. The first step was updating ",
             { label: "the community node that signs Stellar transactions", href: "https://github.com/yripper/n8n-nodes-stellar" },
-            "; at HackMeridian I added three more.",
+            ". At HackMeridian in Lisbon I added three more.",
           ],
           "n8n’s community has published over 13,000 workflow templates. Any of them could end in a payment.",
           [
-            "Yet out of more than 2,000 integrations, only a handful can send money. Encendidos is for that. ",
-            { label: "Try it on Testnet", href: "https://invoice.elitelephant.dev" },
+            "Yet out of more than 2,000 integrations, only a handful can send money. Encendidos adds Stellar to them. See the code ",
+            { label: "on GitHub", href: "https://github.com/yripper/n8n-nodes-stellar" },
             ".",
           ],
         ],
