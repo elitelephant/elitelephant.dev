@@ -99,10 +99,10 @@ export const site = {
         label: "Story",
         paragraphs: [
           "Most people know me as Santiago.",
-          "I got into blockchain a while ago. For the next few years I watched from the sidelines while studying economics in France.",
-          "After that I started computer science back in Chile. At my first blockchain talk I met the people building what I’d been watching.",
+          "I got into blockchain a while ago. For years I watched from the sidelines while studying economics in France.",
+          "After that I started computer science in Chile. At my first blockchain talk I met the people building what I’d been watching.",
           "Since then I’ve joined hackathons and ended up winning one. I went from attending events in Santiago de Chile to helping run them.",
-          "At an internship I built n8n workflows that still handle forms and reports every day. Before this site, I put my first one online in three days.",
+          "At an internship I built n8n workflows that still handle forms and reports daily. Before this site, I put my first one up in three days.",
           "In August I paused my degree to explore, build and rest.",
         ],
       },
@@ -111,7 +111,7 @@ export const site = {
         label: "Building",
         paragraphs: [
           [
-            "I’m bringing Stellar to n8n, as nodes next to the ones people already use. With them, a workflow can hold each payment until a person approves it. I call the project Encendidos. The first step was updating ",
+            "I’m bringing Stellar to n8n, as nodes next to many others. With them, a workflow can hold each payment until a person approves it. I call the project Encendidos. The first step was updating ",
             { label: "the community node that signs Stellar transactions", href: "https://github.com/yripper/n8n-nodes-stellar" },
             ". At HackMeridian in Lisbon I added three more.",
           ],
